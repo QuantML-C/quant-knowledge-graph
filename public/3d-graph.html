@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D 论文知识图谱</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="//unpkg.com/three"></script>
+    <script src="//unpkg.com/3d-force-graph"></script>
+    <style>
+        :root {
+            --primary-color: #00bcd4; /* Cyan for sci-fi feel */
+            --secondary-color: #ff4081;
+            --bg-color: #000011; /* Deep space blue/black */
+            --panel-bg: rgba(20, 20, 30, 0.75);
+            --text-color: #e0e0e0;
+            --border-radius: 16px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+        }
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: 380px;
+            height: 100vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        #sidebar.collapsed {
+            transform: translateX(-380px);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 188, 212, 0.5);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #aaa;
+            font-weight: 600;
+        }
+
+        /* Graph Area */
+        #graph-area {
+            flex: 1;
+            position: relative;
+            height: 100%;
+            background: #000;
+        }
+
+        #3d-graph {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Toggle Sidebar Button */
+        #toggle-sidebar {
+            position: absolute;
+            left: 380px;
+            top: 20px;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-left: none;
+            color: #fff;
+            padding: 10px;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            z-index: 999;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #sidebar.collapsed + #graph-area #toggle-sidebar {
+            left: 0;
+        }
+
+        /* Search Input */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        #search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: var(--transition);
+        }
+
+        #search-input:focus {
+            outline: none;
+            background: rgba(0,0,0,0.5);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+        }
+
+        /* Info Panel Content */
+        .info-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .info-content.active {
+            display: block;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .tag-chip {
+            background: rgba(0, 188, 212, 0.15);
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid rgba(0, 188, 212, 0.3);
+        }
+
+        .tag-chip:hover {
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        /* Controls */
+        .controls-overlay {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(30, 30, 40, 0.8);
+            backdrop-filter: blur(4px);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            background: var(--primary-color);
+            color: #000;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        /* Nav Links */
+        .nav-links {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .nav-link {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: bold;
+            font-size: 13px;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: var(--transition);
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+
+        /* Stats Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.03);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        /* Loading */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 3000;
+            transition: opacity 0.5s;
+        }
+        
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--primary-color);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+            margin-bottom: 20px;
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <div style="font-weight: 500; color: var(--primary-color); letter-spacing: 2px;">INITIALIZING 3D ENGINE...</div>
+    </div>
+
+    <div id="container">
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h1>🌌 3D 知识宇宙</h1>
+                <div style="font-size: 12px; color: #666;">v1.0</div>
+            </div>
+
+            <div class="sidebar-content">
+                
+                <!-- Search Section -->
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索节点..." list="search-suggestions">
+                    <span class="material-icons search-icon">search</span>
+                    <datalist id="search-suggestions"></datalist>
+                </div>
+
+                <!-- Default View: Stats & Filters -->
+                <div id="default-panel" class="info-content active">
+                    <div class="sidebar-section">
+                        <h3>📊 宇宙统计</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-papers">0</div>
+                                <div class="stat-label">论文粒子</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-tags">0</div>
+                                <div class="stat-label">标签节点</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>🛠️ 视图控制</h3>
+                        <div style="margin-bottom: 10px; font-size: 12px; color: #888;">
+                            <p>左键拖拽旋转 | 右键拖拽平移 | 滚轮缩放</p>
+                            <p>点击节点聚焦 | 双击背景重置</p>
+                        </div>
+                         <label style="display:flex; align-items:center; cursor:pointer; margin-bottom:8px; color: #ccc; font-size: 13px;">
+                                <input type="checkbox" id="toggle-rotation" style="margin-right:8px;"> 自动旋转
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Details View: Selected Node Info -->
+                <div id="details-panel" class="info-content">
+                    <button id="back-to-stats" style="margin-bottom:15px; background:transparent; border:none; color:var(--primary-color); cursor:pointer; display:flex; align-items:center; font-weight:600;">
+                        <span class="material-icons" style="font-size:16px; margin-right:5px;">arrow_back</span> 返回概览
+                    </button>
+                    
+                    <div id="node-details">
+                        <!-- Dynamic Content Here -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar Toggle -->
+        <button id="toggle-sidebar" title="切换侧边栏">
+            <span class="material-icons">menu_open</span>
+        </button>
+
+        <!-- Graph Visualization -->
+        <div id="graph-area">
+            <div id="3d-graph"></div>
+            
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">← 返回 2D 视图</a>
+            </div>
+            
+            <div class="controls-overlay">
+                <button class="control-btn" id="reset-camera" title="重置视角"><span class="material-icons">center_focus_weak</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const state = {
+            nodes: [],
+            links: [],
+            graph: null,
+            isRotationActive: false
+        };
+
+        const els = {
+            sidebar: document.getElementById('sidebar'),
+            toggleBtn: document.getElementById('toggle-sidebar'),
+            defaultPanel: document.getElementById('default-panel'),
+            detailsPanel: document.getElementById('details-panel'),
+            nodeDetails: document.getElementById('node-details'),
+            searchInput: document.getElementById('search-input'),
+            loading: document.getElementById('loading-screen')
+        };
+
+        async function init() {
+            try {
+                setupUI();
+                
+                // Load Data
+                const response = await fetch('papers.json');
+                const papers = await response.json();
+                processData(papers);
+                
+                // Initialize Graph
+                initGraph();
+                
+                // Finalize
+                updateStats();
+                els.loading.style.opacity = 0;
+                setTimeout(() => els.loading.style.display = 'none', 500);
+                
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                els.loading.innerHTML = `<p style="color:red; text-align:center;">Error: ${error.message}</p>`;
+            }
+        }
+
+        function processData(papers) {
+            const tagSet = new Set();
+            
+            // Extract Tags
+            papers.forEach(p => {
+                if (p.tags) p.tags.forEach(t => tagSet.add(t));
+            });
+
+            // Create Nodes
+            state.nodes = papers.map(p => ({
+                id: p.id,
+                name: p.title,
+                group: 'paper',
+                val: 5, // size
+                data: p
+            }));
+
+            tagSet.forEach(t => {
+                state.nodes.push({
+                    id: `tag-${t}`,
+                    name: t,
+                    group: 'tag',
+                    val: 3,
+                    data: { tag: t }
+                });
+            });
+
+            // Create Links
+            papers.forEach(p => {
+                if (p.tags) {
+                    p.tags.forEach(t => {
+                        state.links.push({
+                            source: p.id,
+                            target: `tag-${t}`
+                        });
+                    });
+                }
+            });
+
+            // Calculate degrees for size
+            const linkCount = {};
+            state.links.forEach(l => {
+                linkCount[l.source] = (linkCount[l.source] || 0) + 1;
+                linkCount[l.target] = (linkCount[l.target] || 0) + 1;
+            });
+            
+            state.nodes.forEach(n => {
+                if (n.group === 'tag') {
+                    const degree = linkCount[n.id] || 0;
+                    n.val = Math.max(3, Math.min(15, 3 + degree * 0.5));
+                }
+            });
+
+            // Populate Search
+            const dl = document.getElementById('search-suggestions');
+            state.nodes.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n.name;
+                dl.appendChild(opt);
+            });
+        }
+
+        function initGraph() {
+            const elem = document.getElementById('3d-graph');
+            
+            const Graph = ForceGraph3D()(elem)
+                .graphData({ nodes: state.nodes, links: state.links })
+                .nodeLabel('name')
+                .nodeColor(node => node.group === 'paper' ? '#00bcd4' : '#ff4081')
+                .nodeResolution(16) // Lower resolution for better performance
+                .nodeOpacity(0.9)
+                .linkOpacity(0.3)
+                .linkWidth(0.5)
+                .linkColor(() => '#ffffff')
+                .backgroundColor('#000011')
+                .onNodeClick(node => {
+                    // Aim at node from outside it
+                    const distance = 40;
+                    const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+
+                    Graph.cameraPosition(
+                        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+                        node, // lookAt ({ x, y, z })
+                        3000  // ms transition duration
+                    );
+                    
+                    showNodeDetails(node);
+                })
+                .onBackgroundClick(() => {
+                    resetView();
+                });
+            
+            // Add particles to links for cool effect
+            Graph.linkDirectionalParticles(2);
+            Graph.linkDirectionalParticleWidth(1.5);
+            Graph.linkDirectionalParticleSpeed(0.005);
+
+            state.graph = Graph;
+            
+            // Adjust canvas size on resize
+            window.addEventListener('resize', () => {
+                Graph.width(elem.clientWidth);
+                Graph.height(elem.clientHeight);
+            });
+        }
+
+        function showNodeDetails(d) {
+            els.defaultPanel.classList.remove('active');
+            els.detailsPanel.classList.add('active');
+            
+            let html = '';
+            if (d.group === 'paper') {
+                html = `
+                    <div class="info-card">
+                        <h2 style="margin:0 0 10px 0; font-size:1.1rem; color:var(--primary-color);">${d.name}</h2>
+                        <div style="font-size:0.9rem; color:#aaa; margin-bottom:5px;">
+                            <strong>作者:</strong> ${d.data.authors ? d.data.authors.join(', ') : 'Unknown'}
+                        </div>
+                        <div style="font-size:0.9rem; color:#aaa; margin-bottom:5px;">
+                            <strong>年份:</strong> ${d.data.year || 'N/A'}
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>摘要</h3>
+                        <p style="font-size:0.9rem; line-height:1.5; color:#ccc;">${d.data.abstract || '无摘要'}</p>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>标签</h3>
+                        <div class="tag-cloud">
+                            ${(d.data.tags||[]).map(t => `<span class="tag-chip" onclick="findNodeByName('${t}')">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                 html = `
+                    <div class="info-card" style="border-left-color: var(--secondary-color);">
+                        <h2 style="margin:0 0 10px 0; font-size:1.1rem; color:var(--secondary-color);"># ${d.name}</h2>
+                        <div style="font-size:0.9rem; color:#aaa;">
+                            这是一个标签节点。
+                        </div>
+                    </div>
+                `;
+            }
+            els.nodeDetails.innerHTML = html;
+        }
+
+        function findNodeByName(name) {
+            const node = state.nodes.find(n => n.name === name || n.id === `tag-${name}`);
+            if (node) {
+                // Trigger click behavior
+                const distance = 40;
+                const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+                state.graph.cameraPosition(
+                    { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+                    node,
+                    3000
+                );
+                showNodeDetails(node);
+            }
+        }
+        
+        function resetView() {
+            els.defaultPanel.classList.add('active');
+            els.detailsPanel.classList.remove('active');
+            // We don't necessarily reset camera, just the panel
+        }
+
+        function setupUI() {
+            els.toggleBtn.addEventListener('click', () => {
+                els.sidebar.classList.toggle('collapsed');
+                els.toggleBtn.querySelector('span').textContent = els.sidebar.classList.contains('collapsed') ? 'menu' : 'menu_open';
+            });
+            
+            document.getElementById('back-to-stats').addEventListener('click', resetView);
+            
+            // Search
+            els.searchInput.addEventListener('change', (e) => {
+                const term = e.target.value;
+                if(term) findNodeByName(term);
+            });
+            
+            // Controls
+            document.getElementById('reset-camera').addEventListener('click', () => {
+                state.graph.cameraPosition({ x: 0, y: 0, z: 600 }, { x: 0, y: 0, z: 0 }, 2000);
+            });
+            
+            document.getElementById('toggle-rotation').addEventListener('change', (e) => {
+                state.isRotationActive = e.target.checked;
+                // Auto rotate logic
+                if (state.isRotationActive) {
+                    let angle = 0;
+                    const distance = 600;
+                    const interval = setInterval(() => {
+                        if(!state.isRotationActive) {
+                            clearInterval(interval);
+                            return;
+                        }
+                        angle += Math.PI / 3000;
+                        state.graph.cameraPosition({
+                            x: distance * Math.sin(angle),
+                            z: distance * Math.cos(angle)
+                        });
+                    }, 16);
+                }
+            });
+        }
+
+        function updateStats() {
+            document.getElementById('stat-papers').textContent = state.nodes.filter(n => n.group === 'paper').length;
+            document.getElementById('stat-tags').textContent = state.nodes.filter(n => n.group === 'tag').length;
+        }
+
+        // Boot
+        init();
+
+    </script>
+</body>
+</html>

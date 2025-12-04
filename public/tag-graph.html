@@ -1,553 +1,696 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>论文标签关系图谱</title>
+    <title>标签关系图谱可视化</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #009688; /* Different color for Tag Graph */
+            --secondary-color: #FF9800;
+            --bg-color: #f0f2f5;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #333;
+            --border-radius: 16px;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body.dark {
+            --bg-color: #121212;
+            --panel-bg: rgba(30, 30, 30, 0.85);
+            --text-color: #e0e0e0;
+            --box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
-        }
-        #container {
-            position: relative;
-            width: 100%;
-            height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        #graph {
-            width: 100%;
-            height: 100%;
-            background-color: #f9f9f9;
+
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
         }
-        .node {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .node:hover circle {
-            stroke: #ff7f0e;
-            stroke-width: 3px;
-        }
-        .node circle {
-            stroke: #fff;
-            stroke-width: 2px;
-            transition: all 0.3s ease;
-        }
-        .link {
-            stroke-opacity: 0.6;
-            transition: all 0.3s ease;
-        }
-        #info-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 350px;
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-            max-height: 80vh;
-            overflow-y: auto;
-            display: none;
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: 380px;
+            height: 100vh;
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: var(--box-shadow);
             z-index: 1000;
-            transition: all 0.3s ease;
-            border-left: 5px solid #1f77b4;
-        }
-        #info-panel h2 {
-            margin-top: 0;
-            font-size: 20px;
-            color: #333;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        #info-panel p {
-            margin: 12px 0;
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-        }
-        .paper-item {
-            padding: 12px;
-            margin: 8px 0;
-            background-color: #f5f5f5;
-            border-radius: 6px;
-            font-size: 13px;
-            transition: all 0.2s ease;
-            border-left: 3px solid #ccc;
-        }
-        .paper-item:hover {
-            background-color: #e8e8e8;
-            transform: translateX(5px);
-            border-left-color: #1f77b4;
-        }
-        #search-container {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-        }
-        #search-input {
-            padding: 10px 15px 10px 40px;
-            width: 250px;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            font-size: 14px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>');
-            background-repeat: no-repeat;
-            background-position: 15px center;
-        }
-        #search-input:focus {
-            outline: none;
-            width: 300px;
-            border-color: #1f77b4;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.15);
-        }
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: absolute;
+            left: 0;
+            top: 0;
         }
-        .control-btn {
-            background-color: rgba(255, 255, 255, 0.9);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+
+        #sidebar.collapsed {
+            transform: translateX(-380px);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
-        .control-btn:hover {
-            background-color: rgba(240, 240, 240, 0.9);
+
+        .sidebar-header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary-color);
         }
-        .nav-links {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            padding: 8px 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-            z-index: 100;
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
         }
-        .nav-links a {
-            margin: 0 10px;
-            text-decoration: none;
-            color: #333;
-            font-weight: bold;
-        }
-        .nav-links a:hover {
-            color: #1f77b4;
-        }
-        .close-btn {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-            color: #999;
-            transition: all 0.2s ease;
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-        .close-btn:hover {
-            color: #555;
-            background-color: #f0f0f0;
-        }
-        .pin-node {
-            display: inline-block;
-            margin-left: 8px;
-            background-color: #6c757d;
-            color: #fff;
-            padding: 6px 10px;
+
+        .sidebar-section {
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.05);
             border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
+            padding: 15px;
+            border: 1px solid rgba(0,0,0,0.03);
         }
-        .pin-node:hover { background-color: #5a6268; }
-        #filter-panel {
-            position: absolute;
-            top: 70px;
-            left: 20px;
-            background-color: rgba(255,255,255,0.95);
-            border-radius: 8px;
-            padding: 10px 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 90;
-            font-size: 12px;
-            color: #333;
+
+        .sidebar-section h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #888;
+            font-weight: 600;
         }
-        #filter-panel .row { margin: 6px 0; display: flex; align-items: center; gap: 6px; }
-        #filter-panel input[type="number"] { width: 70px; padding: 3px 6px; border: 1px solid #ddd; border-radius: 4px; }
-        body.dark { background-color: #0f1115; color: #e8e8e8; }
-        body.dark #graph { background-color: #0b0d12; }
-        body.dark #info-panel, body.dark .nav-links, body.dark #filter-panel { background-color: rgba(28,31,38,0.95); color: #e8e8e8; }
-        body.dark .control-btn { background-color: rgba(28,31,38,0.95); color: #e8e8e8; }
-        body.dark .control-btn:hover { background-color: rgba(45,50,61,0.95); }
-        .back-to-node {
-            display: inline-block;
-            margin-top: 15px;
-            background-color: #1f77b4;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            text-decoration: none;
-            font-size: 13px;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        /* Graph Area */
+        #graph-area {
+            flex: 1;
+            position: relative;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 150, 136, 0.03) 0%, rgba(0,0,0,0) 70%);
         }
-        .back-to-node:hover {
-            background-color: #155d8e;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-        }
-        .highlight-node circle {
-            stroke: #ff7f0e;
-            stroke-width: 3px;
-        }
-        .related-tag {
-            display: inline-block;
-            background-color: #e0e0e0;
-            padding: 5px 10px;
-            margin: 3px;
-            border-radius: 15px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 1px solid transparent;
-        }
-        .related-tag:hover {
-            background-color: #1f77b4;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        #loading {
+
+        #graph {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
+            overflow: hidden;
         }
-        .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #1f77b4;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
+
+        /* Toggle Sidebar Button */
+        #toggle-sidebar {
+            position: absolute;
+            left: 380px;
+            top: 20px;
+            background: var(--panel-bg);
+            border: none;
+            padding: 10px;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 999;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #sidebar.collapsed + #graph-area #toggle-sidebar {
+            left: 0;
+        }
+
+        /* Search Input */
+        .search-box {
+            position: relative;
             margin-bottom: 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        
+        #search-input {
+            width: 100%;
+            padding: 12px 40px 12px 15px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background: rgba(0,0,0,0.05);
+            color: var(--text-color);
+            font-size: 14px;
+            box-sizing: border-box;
+            transition: var(--transition);
         }
-        .tooltip {
+
+        #search-input:focus {
+            outline: none;
+            background: #fff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.15);
+        }
+        
+        body.dark #search-input:focus {
+            background: #2c2c2c;
+        }
+
+        .search-icon {
             position: absolute;
-            background-color: white;
-            border-radius: 5px;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+        }
+
+        /* Info Panel Content */
+        .info-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .info-content.active {
+            display: block;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        body.dark .info-card {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .tag-chip {
+            background: rgba(0, 150, 136, 0.1);
+            color: var(--primary-color);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .tag-chip:hover {
+            background: var(--primary-color);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* Controls */
+        .controls-overlay {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text-color);
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            background: #fff;
+        }
+        
+        body.dark .control-btn:hover {
+            background: #333;
+        }
+
+        /* Stats Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: rgba(0,0,0,0.03);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #888;
+        }
+        
+        /* Node Styles */
+        .node circle {
+            transition: all 0.3s ease;
+        }
+        
+        .node.dimmed {
+            opacity: 0.1;
+        }
+        
+        .link.dimmed {
+            opacity: 0.05;
+        }
+
+        /* Tooltip */
+        .graph-tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
             padding: 8px 12px;
+            border-radius: 6px;
             font-size: 12px;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.3s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1500;
-            max-width: 200px;
+            transition: opacity 0.2s;
+            z-index: 2000;
+            backdrop-filter: blur(4px);
+            max-width: 250px;
         }
-        .node-label {
-            pointer-events: none;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+
+        /* Loading */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 3000;
+            transition: opacity 0.5s;
+        }
+        
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid var(--primary-color);
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            animation: rotation 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.2);
+        }
+        
+        .filter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .filter-row input {
+            width: 60px;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
+
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <div style="font-weight: 500; color: var(--primary-color);">正在构建标签共现图谱...</div>
+    </div>
+
     <div id="container">
-        <div id="loading">
-            <div class="spinner"></div>
-            <p>加载中，请稍候...</p>
+        <!-- Sidebar -->
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h1>🏷️ 标签共现图谱</h1>
+                <div style="font-size: 12px; color: #666;">v1.2</div>
         </div>
 
-        <div class="nav-links">
-            <a href="index.html">论文-标签图谱</a>
-            <a href="tag-graph.html">标签关系图谱</a>
+            <div class="sidebar-content">
+                
+                <!-- Search Section -->
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索标签..." list="search-suggestions">
+                    <span class="material-icons search-icon">search</span>
+                    <datalist id="search-suggestions"></datalist>
         </div>
         
-        <div id="search-container">
-            <input type="text" id="search-input" placeholder="搜索标签..." list="tag-suggestions">
-            <datalist id="tag-suggestions"></datalist>
+                <!-- Default View: Stats & Filters -->
+                <div id="default-panel" class="info-content active">
+                    <div class="sidebar-section">
+                        <h3>📊 图谱统计</h3>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-nodes">0</div>
+                                <div class="stat-label">标签数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-links">0</div>
+                                <div class="stat-label">共现关系</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-max-degree">0</div>
+                                <div class="stat-label">最大度</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value" id="stat-density">0</div>
+                                <div class="stat-label">密度</div>
+                            </div>
+                        </div>
         </div>
         
-        <div id="graph"></div>
-        
-        <div id="info-panel">
-            <button class="close-btn" title="关闭">&times;</button>
-            <h2 id="tag-name"></h2>
-            <p><strong>相关论文数量:</strong> <span id="paper-count"></span></p>
-            <p><strong>相关标签:</strong> <div id="related-tags"></div></p>
-            <h3>相关论文:</h3>
-            <div id="related-papers"></div>
+                    <div class="sidebar-section">
+                        <h3>🛠️ 过滤器</h3>
+                        <div class="filter-row">
+                            <span style="font-size:12px;">最小共现次数:</span>
+                            <input type="number" id="min-cooc" value="1" min="1">
+                        </div>
+                        <div class="filter-row">
+                            <span style="font-size:12px;">节点最小度:</span>
+                            <input type="number" id="min-degree" value="0" min="0">
+                        </div>
+                        <div style="font-size:11px; color:#888; margin-top:5px;">
+                            调整数值后自动过滤。这有助于在大型图谱中隐藏无关紧要的连接。
+                        </div>
+                    </div>
+
+                    <div class="sidebar-section">
+                        <h3>🔍 多标签检索 (交集)</h3>
+                        <div style="background:rgba(0,0,0,0.02); padding:10px; border-radius:8px;">
+                            <div style="display:flex; gap:5px; margin-bottom:8px;">
+                                <input type="text" id="multi-tag-input" list="search-suggestions" placeholder="输入标签..." style="flex:1; padding:6px; border-radius:4px; border:1px solid #ddd;">
+                                <button id="add-tag-btn" style="background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer;">+</button>
+                            </div>
+                            <div id="selected-tags-container" class="tag-cloud"></div>
+                            <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                                <span id="multi-tag-result" style="font-size:12px; color:#666;"></span>
             <div>
-                <button class="back-to-node">返回到节点</button>
-                <button class="pin-node">锁定/解锁</button>
+                                    <button id="find-multi-tag-btn" style="padding:4px 8px; background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">查找论文</button>
+                                    <button id="clear-multi-tag-btn" style="padding:4px 8px; background:#ddd; border:none; border-radius:4px; cursor:pointer; font-size:12px;">重置</button>
+                                </div>
+                            </div>
+                             <div id="multi-tag-result-list" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
+                        </div>
             </div>
         </div>
         
-        <div class="controls">
-            <button class="control-btn" id="zoom-in" title="放大">+</button>
-            <button class="control-btn" id="zoom-out" title="缩小">-</button>
-            <button class="control-btn" id="reset-zoom" title="重置">↺</button>
-            <button class="control-btn" id="fit-view" title="适配全图">⤢</button>
-            <button class="control-btn" id="export-png" title="导出为PNG">⤓</button>
-            <button class="control-btn" id="toggle-dark" title="深色模式">🌓</button>
-            <button class="control-btn" id="clear-layout" title="清空保存的布局">⎚</button>
+                <!-- Details View: Selected Node Info -->
+                <div id="details-panel" class="info-content">
+                    <button id="back-to-stats" style="margin-bottom:15px; background:transparent; border:none; color:var(--primary-color); cursor:pointer; display:flex; align-items:center; font-weight:600;">
+                        <span class="material-icons" style="font-size:16px; margin-right:5px;">arrow_back</span> 返回概览
+                    </button>
+                    
+                    <div id="node-details">
+                        <!-- Dynamic Content Here -->
         </div>
         
-        <div class="tooltip" id="node-tooltip"></div>
-        
-        <div id="filter-panel">
-            <div class="row">最小共现次数: <input type="number" id="min-cooc" value="1" /></div>
-            <div class="row">节点最小度: <input type="number" id="min-degree" value="0" /></div>
-            <!-- 多标签检索（交集） -->
-            <div class="row" style="display:block; margin-top:6px;">
-                <div style="margin-bottom:6px; font-weight:bold;">多标签检索（交集）</div>
-                <div style="display:flex; gap:6px; align-items:center; margin-bottom:6px;">
-                    <input type="text" id="multi-tag-input" list="multi-tag-suggestions" placeholder="输入标签，回车添加" style="flex:1; padding:3px 6px; border:1px solid #ddd; border-radius:4px;"/>
-                    <datalist id="multi-tag-suggestions"></datalist>
-                    <button id="add-tag-btn" class="pin-node" style="margin-left:0;">添加</button>
+                    <div class="sidebar-section">
+                         <h3>相关论文</h3>
+                         <div id="related-papers-list" style="max-height: 300px; overflow-y:auto;"></div>
+                    </div>
+
+                    <div class="sidebar-section" style="margin-top:20px;">
+                        <h3>操作</h3>
+                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                            <button id="btn-focus-node" class="tag-chip" style="background:#4CAF50; color:white;">👁️ 聚焦模式</button>
+                            <button id="btn-pin-node" class="tag-chip" style="background:#FF9800; color:white;">📍 锁定位置</button>
                 </div>
-                <div id="selected-tags-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;"></div>
-                <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                    <button id="find-multi-tag-btn" class="pin-node" style="background-color:#1f77b4;">查找论文</button>
-                    <button id="clear-multi-tag-btn" class="pin-node">清空</button>
-                    <span id="multi-tag-result" style="font-size:12px; color:#666;"></span>
                 </div>
-                <div id="multi-tag-result-list" style="margin-top:6px; max-height:140px; overflow:auto;"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Sidebar Toggle -->
+        <button id="toggle-sidebar" title="切换侧边栏">
+            <span class="material-icons">menu_open</span>
+        </button>
+
+        <!-- Graph Visualization -->
+        <div id="graph-area">
+            <div id="graph"></div>
+            
+            <div class="tooltip" id="node-tooltip"></div>
+            
+            <div class="controls-overlay">
+                <button class="control-btn" id="zoom-in" title="放大"><span class="material-icons">add</span></button>
+                <button class="control-btn" id="zoom-out" title="缩小"><span class="material-icons">remove</span></button>
+                <button class="control-btn" id="fit-view" title="适配全图"><span class="material-icons">center_focus_strong</span></button>
+                <button class="control-btn" id="toggle-focus-mode" title="全局聚焦模式"><span class="material-icons">filter_center_focus</span></button>
+                <button class="control-btn" id="export-png" title="导出图片"><span class="material-icons">download</span></button>
+                <button class="control-btn" id="toggle-dark" title="切换主题"><span class="material-icons">dark_mode</span></button>
+            </div>
+            
+            <div class="nav-links" style="position:absolute; top:20px; right:20px; display:flex; gap:10px;">
+                <a href="index.html" style="background:white; padding:8px 15px; border-radius:20px; text-decoration:none; color:#333; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-size:13px;">→ 论文-标签图谱</a>
+                <a href="3d-graph.html" style="background:#2c3e50; padding:8px 15px; border-radius:20px; text-decoration:none; color:white; font-weight:bold; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-size:13px;">🌌 3D 视图</a>
             </div>
         </div>
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
-        // 初始化变量
-        let graph, simulation, svg, g;
-        let nodes = [], links = [];
-        let width, height;
-        let transform = d3.zoomIdentity;
-        let papers = [];
-        let currentNode = null;
-        let tooltip = d3.select("#node-tooltip");
-        let zoom; // 全局缩放变量
-        
-        let allTagsList = [];
-        let selectedSearchTags = new Set();
-        
-        // 加载数据
-        async function loadData() {
+        // --- State Management ---
+        const state = {
+            nodes: [],
+            links: [],
+            papers: [],
+            width: window.innerWidth,
+            height: window.innerHeight,
+            transform: d3.zoomIdentity,
+            currentNode: null,
+            focusMode: false,
+            multiTags: new Set(),
+            filters: {
+                minCooc: 1,
+                minDegree: 0
+            }
+        };
+
+        // --- D3 Variables ---
+        let svg, g, simulation, link, node, zoom;
+
+        // --- DOM Elements ---
+        const els = {
+            sidebar: document.getElementById('sidebar'),
+            toggleBtn: document.getElementById('toggle-sidebar'),
+            defaultPanel: document.getElementById('default-panel'),
+            detailsPanel: document.getElementById('details-panel'),
+            nodeDetails: document.getElementById('node-details'),
+            searchInput: document.getElementById('search-input'),
+            tooltip: document.getElementById('node-tooltip'),
+            loading: document.getElementById('loading-screen'),
+            relatedPapersList: document.getElementById('related-papers-list')
+        };
+
+        // --- Initialization ---
+        async function init() {
             try {
+                setupUI();
+                
                 const response = await fetch('papers.json');
-                papers = await response.json();
+                state.papers = await response.json();
+                processData();
                 
-                // 提取所有唯一的标签
-                const allTags = new Set();
-                papers.forEach(paper => {
-                    if (paper.tags && Array.isArray(paper.tags)) {
-                        paper.tags.forEach(tag => allTags.add(tag));
-                    }
-                });
+                initGraph();
                 
-                // 创建节点
-                allTags.forEach(tag => {
-                    // 计算使用此标签的论文数量
-                    const count = papers.filter(paper => 
-                        paper.tags && paper.tags.includes(tag)
-                    ).length;
-                    
-                    nodes.push({
-                        id: tag,
-                        name: tag,
-                        count: count
+                updateStats();
+                els.loading.style.opacity = 0;
+                setTimeout(() => els.loading.style.display = 'none', 500);
+                
+            } catch (error) {
+                console.error("Initialization failed:", error);
+                els.loading.innerHTML = `<p style="color:red">Error: ${error.message}</p>`;
+            }
+        }
+
+        // --- Data Processing ---
+        function processData() {
+            const allTags = new Set();
+            const tagCounts = {};
+            const tagPairs = {};
+
+            state.papers.forEach(p => {
+                if (p.tags && Array.isArray(p.tags)) {
+                    // Count tags
+                    p.tags.forEach(t => {
+                        allTags.add(t);
+                        tagCounts[t] = (tagCounts[t] || 0) + 1;
                     });
-                });
-                
-                // 创建标签之间的连接
-                // 如果两个标签被同一篇论文使用，它们之间就有连接
-                const tagPairs = new Map();
-                
-                papers.forEach(paper => {
-                    if (paper.tags && paper.tags.length > 1) {
-                        // 对于每篇论文，创建其标签之间的所有可能对
-                        for (let i = 0; i < paper.tags.length; i++) {
-                            for (let j = i + 1; j < paper.tags.length; j++) {
-                                const tag1 = paper.tags[i];
-                                const tag2 = paper.tags[j];
-                                
-                                // 创建一个唯一的键来表示这对标签
-                                const pairKey = [tag1, tag2].sort().join('|||');
-                                
-                                if (tagPairs.has(pairKey)) {
-                                    tagPairs.set(pairKey, tagPairs.get(pairKey) + 1);
-                                } else {
-                                    tagPairs.set(pairKey, 1);
+                    
+                    // Count pairs
+                    if(p.tags.length > 1) {
+                        for(let i=0; i<p.tags.length; i++) {
+                            for(let j=i+1; j<p.tags.length; j++) {
+                                const t1 = p.tags[i];
+                                const t2 = p.tags[j];
+                                const key = [t1, t2].sort().join('|||');
+                                tagPairs[key] = (tagPairs[key] || 0) + 1;
                                 }
                             }
                         }
                     }
                 });
                 
-                // 将标签对转换为连接
-                tagPairs.forEach((count, pairKey) => {
-                    const [source, target] = pairKey.split('|||');
-                    links.push({
-                        source: source,
-                        target: target,
-                        value: count
-                    });
-                });
-                
-                // 保存标签列表用于多标签检索
-                allTagsList = Array.from(allTags).sort();
-                
-                // 从本地存储恢复布局
-                loadLayout();
-
-                // 初始化图形
-                initializeGraph();
-                
-                // 隐藏加载动画
-                document.getElementById('loading').style.display = 'none';
-                
-                // 初始化多标签检索
-                setupMultiTagSearch();
-                
-            } catch (error) {
-                console.error('Error loading data:', error);
-                document.getElementById('loading').innerHTML = `
-                    <p style="color: red">加载数据出错</p>
-                    <p>${error.message}</p>
-                    <button onclick="location.reload()" style="padding: 8px 16px; background: #1f77b4; color: white; border: none; border-radius: 4px; cursor: pointer;">重试</button>
-                `;
-            }
-        }
-        
-        // 初始化图形
-        function initializeGraph() {
-            // 设置画布尺寸
-            width = window.innerWidth;
-            height = window.innerHeight;
+            // Create Nodes
+            state.nodes = Array.from(allTags).map(t => ({
+                id: t,
+                name: t,
+                count: tagCounts[t],
+                r: Math.max(5, Math.min(30, 5 + tagCounts[t] * 0.8))
+            }));
             
-            // 创建SVG元素
+            // Create Links
+            state.links = Object.entries(tagPairs).map(([key, count]) => {
+                const [source, target] = key.split('|||');
+                return {
+                    source,
+                    target,
+                        value: count
+                };
+            });
+            
+            // Stats prep (degree calculation handled dynamically or pre-calc?)
+            // We'll calculate current degrees in stats update
+        }
+
+        // --- Graph Rendering ---
+        function initGraph() {
+            const width = els.sidebar.classList.contains('collapsed') ? window.innerWidth : window.innerWidth - 380;
+            const height = window.innerHeight;
+
             svg = d3.select("#graph")
                 .append("svg")
-                .attr("width", width)
-                .attr("height", height)
-                .on("click", handleSvgClick); // 添加点击事件处理
-            
-            // 添加缩放功能
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .on("click", handleBackgroundClick);
+
+            g = svg.append("g");
+
             zoom = d3.zoom()
-                .scaleExtent([0.1, 4])
-                .on("zoom", (event) => {
-                    transform = event.transform;
-                    g.attr("transform", transform);
-                    // 当缩放时隐藏提示
-                    tooltip.style("opacity", 0);
-                });
+                .scaleExtent([0.1, 8])
+                .on("zoom", e => g.attr("transform", e.transform));
             
             svg.call(zoom);
             
-            // 创建一个包含所有元素的组
-            g = svg.append("g");
-            
-            // 创建力导向图
-            simulation = d3.forceSimulation(nodes)
-                .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-                .force("charge", d3.forceManyBody().strength(-300))
+            // Color Scale
+            const colorScale = d3.scaleSequential()
+                .domain([0, d3.max(state.nodes, d => d.count)])
+                .interpolator(d3.interpolateTeal);
+
+            simulation = d3.forceSimulation(state.nodes)
+                .force("link", d3.forceLink(state.links).id(d => d.id).distance(150))
+                .force("charge", d3.forceManyBody().strength(-400))
                 .force("center", d3.forceCenter(width / 2, height / 2))
-                .force("collision", d3.forceCollide().radius(d => getNodeRadius(d) + 2));
-            
-            // 创建连接线的颜色比例尺
-            const linkColorScale = d3.scaleLinear()
-                .domain([1, d3.max(links, d => d.value)])
-                .range(["#ccc", "#666"]);
-            
-            // 创建连接线的宽度比例尺
-            const linkWidthScale = d3.scaleLinear()
-                .domain([1, d3.max(links, d => d.value)])
-                .range([1, 5]);
-            
-            // 绘制连接线
-            const link = g.append("g")
+                .force("collide", d3.forceCollide().radius(d => d.r + 2));
+
+            link = g.append("g")
                 .selectAll("line")
-                .data(links)
-                .enter()
-                .append("line")
+                .data(state.links)
+                .join("line")
                 .attr("class", "link")
-                .attr("stroke", d => linkColorScale(d.value))
-                .attr("stroke-width", d => linkWidthScale(d.value))
-                .append("title")
-                .text(d => `${d.source.name} - ${d.target.name}: ${d.value} 篇共同论文`);
-            
-            // 创建节点的颜色比例尺
-            const nodeColorScale = d3.scaleSequential()
-                .domain([0, d3.max(nodes, d => d.count)])
-                .interpolator(d3.interpolateBlues);
-            
-            // 绘制节点
-            const node = g.append("g")
+                .attr("stroke", "#999")
+                .attr("stroke-opacity", 0.6)
+                .attr("stroke-width", d => Math.sqrt(d.value));
+
+            node = g.append("g")
                 .selectAll(".node")
-                .data(nodes)
-                .enter()
-                .append("g")
+                .data(state.nodes)
+                .join("g")
                 .attr("class", "node")
                 .call(d3.drag()
-                    .on("start", dragstarted)
-                    .on("drag", dragged)
-                    .on("end", dragended))
+                    .on("start", dragStart)
+                    .on("drag", dragging)
+                    .on("end", dragEnd))
                 .on("click", handleNodeClick)
-                .on("mouseover", handleNodeMouseOver)
-                .on("mouseout", handleNodeMouseOut);
+                .on("mouseover", showTooltip)
+                .on("mouseout", hideTooltip);
             
-            // 添加圆形
             node.append("circle")
-                .attr("r", getNodeRadius)
-                .attr("fill", d => nodeColorScale(d.count))
+                .attr("r", d => d.r)
+                .attr("fill", d => colorScale(d.count))
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 1.5);
             
-            // 添加文本标签
             node.append("text")
-                .attr("class", "node-label")
-                .attr("dy", 3)
+                .text(d => d.name)
+                .attr("font-size", d => Math.min(14, 10 + d.count / 5))
+                .attr("dx", 0)
+                .attr("dy", d => -d.r - 5)
                 .attr("text-anchor", "middle")
-                .text(d => d.name.length > 12 ? d.name.substring(0, 12) + '...' : d.name)
-                .attr("font-size", d => Math.min(12, 8 + d.count / 10) + "px")
-                .attr("fill", d => d3.lab(nodeColorScale(d.count)).l < 50 ? "#fff" : "#000");
-            
-            // 设置模拟的tick事件
+                .attr("fill", "#666")
+                .style("pointer-events", "none")
+                .style("text-shadow", "0 1px 2px rgba(255,255,255,0.8)");
+
             simulation.on("tick", () => {
                 link
                     .attr("x1", d => d.source.x)
@@ -558,413 +701,303 @@
                 node
                     .attr("transform", d => `translate(${d.x},${d.y})`);
             });
-            
-            // 设置搜索功能
-            setupSearch();
-            
-            // 设置控制按钮
-            setupControls(zoom);
-            
-            // 设置信息面板关闭按钮和返回节点按钮
-            setupInfoPanel();
-            
-            // 键盘快捷键
-            setupKeyboardShortcuts();
-            
-            // 过滤与主题
-            initializeTheme();
-            setupFilters();
-            applyFilters();
-            
-            // 哈希聚焦
-            setTimeout(() => {
-                const id = decodeURIComponent((location.hash || '').replace('#',''));
-                if (id) {
-                    const target = nodes.find(n => n.id === id);
-                    if (target) focusOnNode(target);
-                }
-            }, 400);
         }
+
+        // --- Interaction Handlers ---
         
-        // 获取节点半径
-        function getNodeRadius(d) {
-            return Math.max(5, Math.min(20, 5 + d.count / 2));
-        }
-        
-        // 处理节点悬停
-        function handleNodeMouseOver(event, d) {
-            // 显示提示
-            tooltip
-                .style("opacity", 1)
-                .html(`<strong>${d.name}</strong><br><span style="color:#666; font-size:10px;">${d.count} 篇相关论文</span>`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-                
-            // 高亮相关连接
-            d3.selectAll(".link")
-                .style("stroke-opacity", link => 
-                    (link.source.id === d.id || link.source === d.id || link.target.id === d.id || link.target === d.id) ? 1 : 0.1);
-                
-            // 放大当前节点
-            d3.select(this).select("circle")
-                .transition()
-                .duration(200)
-                .attr("r", getNodeRadius(d) * 1.2);
-        }
-        
-        // 处理节点鼠标离开
-        function handleNodeMouseOut() {
-            // 隐藏提示
-            tooltip.style("opacity", 0);
-            
-            // 恢复连接透明度
-            d3.selectAll(".link")
-                .style("stroke-opacity", 0.6);
-                
-            // 恢复节点大小
-            d3.select(this).select("circle")
-                .transition()
-                .duration(200)
-                .attr("r", d => getNodeRadius(d));
-        }
-        
-        // 处理节点点击
         function handleNodeClick(event, d) {
-            // 防止事件冒泡到SVG
             event.stopPropagation();
+            state.currentNode = d;
             
-            // 移除之前的高亮
-            d3.selectAll(".node").classed("highlight-node", false);
+            // Highlight
+            node.classed("dimmed", true);
+            link.classed("dimmed", true);
             
-            // 高亮当前节点
-            d3.select(this).classed("highlight-node", true);
-            
-            // 显示节点信息
-            showNodeInfo(d);
-            
-            // 保存当前节点引用
-            currentNode = this;
-            
-            // 隐藏提示
-            tooltip.style("opacity", 0);
-        }
-        
-        // 处理SVG点击（空白区域点击）
-        function handleSvgClick(event) {
-            // 检查点击是否发生在空白区域
-            if (event.target.tagName === 'svg' || event.target.id === 'graph') {
-                hideInfoPanel();
-                // 移除高亮
-                d3.selectAll(".node").classed("highlight-node", false);
-                currentNode = null;
-            }
-        }
-        
-        // 显示节点信息
-        function showNodeInfo(d) {
-            const infoPanel = document.getElementById('info-panel');
-            
-            document.getElementById('tag-name').textContent = d.name;
-            document.getElementById('paper-count').textContent = d.count;
-            
-            // 查找与此标签相关的其他标签
-            const relatedTags = new Set();
-            links.forEach(link => {
-                if (link.source.id === d.id || link.source === d.id) {
-                    relatedTags.add(typeof link.target === 'object' ? link.target.id : link.target);
-                } else if (link.target.id === d.id || link.target === d.id) {
-                    relatedTags.add(typeof link.source === 'object' ? link.source.id : link.source);
-                }
+            // Neighbors
+            const connectedIds = new Set([d.id]);
+            link.each(l => {
+                // Check if link is visible first? No, logic based on structure
+                if (l.source.id === d.id) connectedIds.add(l.target.id);
+                if (l.target.id === d.id) connectedIds.add(l.source.id);
             });
             
-            // 显示相关标签
-            const relatedTagsContainer = document.getElementById('related-tags');
-            relatedTagsContainer.innerHTML = '';
+            node.filter(n => connectedIds.has(n.id))
+                .classed("dimmed", false)
+                .select("circle").attr("stroke", "#333").attr("stroke-width", 2);
+                
+            link.filter(l => connectedIds.has(l.source.id) && connectedIds.has(l.target.id))
+                .classed("dimmed", false)
+                .attr("stroke-opacity", 1);
             
-            if (relatedTags.size > 0) {
-                Array.from(relatedTags).forEach(tag => {
-                    const tagSpan = document.createElement('span');
-                    tagSpan.className = 'related-tag';
-                    tagSpan.textContent = tag;
-                    tagSpan.addEventListener('click', () => {
-                        // 查找对应的标签节点
-                        const tagNode = nodes.find(n => n.id === tag);
-                        if (tagNode) {
-                            // 聚焦到该标签节点
-                            focusOnNode(tagNode);
-                        }
-                    });
-                    relatedTagsContainer.appendChild(tagSpan);
-                });
-            } else {
-                relatedTagsContainer.textContent = '无';
-            }
+            showNodeDetails(d);
             
-            // 查找使用此标签的所有论文
-            const relatedPapers = papers.filter(paper => 
-                paper.tags && paper.tags.includes(d.name)
+            // Zoom
+            const scale = 1.5;
+            svg.transition().duration(750).call(
+                zoom.transform, 
+                d3.zoomIdentity.translate(state.width/2 - d.x*scale, state.height/2 - d.y*scale).scale(scale)
             );
+        }
+
+        function handleBackgroundClick(event) {
+            if (event.target.tagName === 'svg') {
+                resetView();
+            }
+        }
+
+        function resetView() {
+            state.currentNode = null;
+            node.classed("dimmed", false);
+            link.classed("dimmed", false);
+            node.select("circle").attr("stroke", "#fff").attr("stroke-width", 1.5);
+            link.attr("stroke-opacity", 0.6);
             
-            const papersContainer = document.getElementById('related-papers');
-            papersContainer.innerHTML = '';
+            if(state.focusMode) toggleFocusMode();
+
+            els.defaultPanel.classList.add('active');
+            els.detailsPanel.classList.remove('active');
+        }
+
+        function showNodeDetails(d) {
+            els.defaultPanel.classList.remove('active');
+            els.detailsPanel.classList.add('active');
             
-            if (relatedPapers.length > 0) {
-                relatedPapers.forEach(paper => {
-                    const paperDiv = document.createElement('div');
-                    paperDiv.className = 'paper-item';
-                    
-                    const titleElem = document.createElement('strong');
-                    titleElem.textContent = paper.title;
-                    paperDiv.appendChild(titleElem);
-                    
-                    if (paper.authors && paper.authors.length > 0) {
-                        const authorsElem = document.createElement('div');
-                        authorsElem.textContent = `作者: ${paper.authors.join(', ')}`;
-                        authorsElem.style.fontSize = '12px';
-                        authorsElem.style.marginTop = '5px';
-                        paperDiv.appendChild(authorsElem);
-                    }
-                    
-                    if (paper.year) {
-                        const yearElem = document.createElement('div');
-                        yearElem.textContent = `年份: ${paper.year}`;
-                        yearElem.style.fontSize = '12px';
-                        yearElem.style.marginTop = '3px';
-                        paperDiv.appendChild(yearElem);
-                    }
-                    
-                    papersContainer.appendChild(paperDiv);
+            els.nodeDetails.innerHTML = `
+                <div class="info-card" style="border-left-color: var(--primary-color);">
+                    <h2 style="margin:0 0 10px 0; font-size:1.4rem; color:var(--primary-color);"># ${d.name}</h2>
+                    <div style="font-size:0.9rem; color:#666;">
+                        关联论文: <strong>${d.count}</strong> 篇
+                    </div>
+                </div>
+            `;
+            
+            // Find Related Papers
+            const papers = state.papers.filter(p => p.tags && p.tags.includes(d.name));
+            els.relatedPapersList.innerHTML = papers.map(p => `
+                <div style="padding:10px; background:rgba(0,0,0,0.02); margin-bottom:5px; border-radius:6px; font-size:13px;">
+                    <div style="font-weight:bold; margin-bottom:3px;">${p.title}</div>
+                    <div style="color:#666; font-size:11px;">${p.year || ''} - ${p.authors ? p.authors[0] + ' et al.' : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        // --- Features ---
+        
+        function toggleFocusMode() {
+            state.focusMode = !state.focusMode;
+            const btn = document.getElementById('toggle-focus-mode');
+            btn.style.background = state.focusMode ? 'var(--primary-color)' : 'var(--panel-bg)';
+            btn.style.color = state.focusMode ? '#fff' : 'var(--text-color)';
+            
+            if (state.focusMode && state.currentNode) {
+                const connectedIds = new Set([state.currentNode.id]);
+                link.each(l => {
+                    if (l.source.id === state.currentNode.id) connectedIds.add(l.target.id);
+                    if (l.target.id === state.currentNode.id) connectedIds.add(l.source.id);
                 });
+                
+                node.style("display", n => connectedIds.has(n.id) ? "block" : "none");
+                link.style("display", l => connectedIds.has(l.source.id) && connectedIds.has(l.target.id) ? "block" : "none");
             } else {
-                papersContainer.textContent = '无相关论文';
-            }
-            
-            // 显示信息面板并添加动画效果
-            infoPanel.style.display = 'block';
-            infoPanel.style.transform = 'translateX(20px)';
-            infoPanel.style.opacity = '0';
-            setTimeout(() => {
-                infoPanel.style.transform = 'translateX(0)';
-                infoPanel.style.opacity = '1';
-            }, 10);
-            try { location.hash = encodeURIComponent(d.id); } catch (e) {}
-        }
-        
-        // 聚焦到指定节点
-        function focusOnNode(node) {
-            // 寻找对应的DOM节点
-            let targetNodeElement = null;
-            d3.selectAll('.node').each(function(d) {
-                if (d.id === node.id) {
-                    targetNodeElement = this;
-                }
-            });
-            
-            if (targetNodeElement) {
-                // 移除所有节点的高亮
-                d3.selectAll(".node").classed("highlight-node", false);
-                
-                // 高亮目标节点
-                d3.select(targetNodeElement).classed("highlight-node", true);
-                
-                // 设置当前节点
-                currentNode = targetNodeElement;
-                
-                // 计算缩放和平移以聚焦到节点
-                const scale = 2; // 缩放级别
-                const x = width / 2 - node.x * scale;
-                const y = height / 2 - node.y * scale;
-                
-                // 应用变换
-                svg.transition()
-                   .duration(750)
-                   .call(d3.zoom().transform, d3.zoomIdentity.translate(x, y).scale(scale));
-                
-                // 显示节点信息
-                showNodeInfo(node);
+                applyFilters();
             }
         }
         
-        // 隐藏信息面板
-        function hideInfoPanel() {
-            document.getElementById('info-panel').style.display = 'none';
+        function findNodeByName(name) {
+            const target = state.nodes.find(n => n.name === name);
+            if (target) handleNodeClick({stopPropagation:()=>{}}, target);
         }
         
-        // 设置信息面板的关闭按钮和返回节点按钮
-        function setupInfoPanel() {
-            // 关闭按钮
-            document.querySelector('.close-btn').addEventListener('click', () => {
-                hideInfoPanel();
-                // 移除高亮
-                d3.selectAll(".node").classed("highlight-node", false);
-                currentNode = null;
+        // --- Setup UI Handlers ---
+        function setupUI() {
+            els.toggleBtn.addEventListener('click', () => {
+                els.sidebar.classList.toggle('collapsed');
+                els.toggleBtn.querySelector('span').textContent = els.sidebar.classList.contains('collapsed') ? 'menu' : 'menu_open';
             });
             
-            // 返回节点按钮
-            document.querySelector('.back-to-node').addEventListener('click', () => {
-                if (currentNode) {
-                    const nodeData = d3.select(currentNode).datum();
-                    const scale = 2; 
-                    const x = width / 2 - nodeData.x * scale;
-                    const y = height / 2 - nodeData.y * scale;
-                    svg.transition().duration(750).call(d3.zoom().transform, d3.zoomIdentity.translate(x, y).scale(scale));
-                    d3.selectAll('.node').classed('highlight-node', false);
-                    d3.select(currentNode).classed('highlight-node', true);
-                    hideInfoPanel();
+            document.getElementById('back-to-stats').addEventListener('click', resetView);
+            
+            els.searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                if (!term) {
+                    node.classed("dimmed", false);
+                    return;
                 }
-            });
-            // 锁定/解锁
-            document.querySelector('.pin-node').addEventListener('click', () => {
-                if (!currentNode) return;
-                const data = d3.select(currentNode).datum();
-                if (data.fx == null || data.fy == null) { data.fx = data.x; data.fy = data.y; } else { data.fx = null; data.fy = null; }
-                saveLayout();
+                const matches = state.nodes.filter(n => n.name.toLowerCase().includes(term));
+                const matchIds = new Set(matches.map(n => n.id));
+                node.classed("dimmed", n => !matchIds.has(n.id));
             });
             
-            // 点击空白处关闭信息面板
-            document.getElementById('graph').addEventListener('click', function(event) {
-                // 确保点击的是空白区域，而不是节点
-                if (event.target === this || event.target.tagName === 'svg') {
-                    hideInfoPanel();
-                    // 移除高亮
-                    d3.selectAll(".node").classed("highlight-node", false);
-                    currentNode = null;
-                }
+            // Filters
+            document.getElementById('min-cooc').addEventListener('change', applyFilters);
+            document.getElementById('min-degree').addEventListener('change', applyFilters);
+            
+            // Controls
+            document.getElementById('zoom-in').addEventListener('click', () => svg.transition().call(zoom.scaleBy, 1.2));
+            document.getElementById('zoom-out').addEventListener('click', () => svg.transition().call(zoom.scaleBy, 0.8));
+            document.getElementById('fit-view').addEventListener('click', fitView);
+            document.getElementById('toggle-focus-mode').addEventListener('click', toggleFocusMode);
+            document.getElementById('btn-focus-node').addEventListener('click', toggleFocusMode);
+            document.getElementById('toggle-dark').addEventListener('click', () => {
+                document.body.classList.toggle('dark');
+                localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
             });
+            document.getElementById('export-png').addEventListener('click', exportPNG);
+            
+            if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+            
+            window.addEventListener('resize', () => {
+                state.width = window.innerWidth;
+                state.height = window.innerHeight;
+                svg.attr("width", "100%").attr("height", "100%");
+                simulation.force("center", d3.forceCenter(state.width/2, state.height/2)).restart();
+            });
+            
+            setupMultiTags();
+        }
+
+        function setupMultiTags() {
+            const btn = document.getElementById('add-tag-btn');
+            const input = document.getElementById('multi-tag-input');
+            const container = document.getElementById('selected-tags-container');
+            
+            const add = () => {
+                const val = input.value.trim();
+                if(val && !state.multiTags.has(val)) {
+                    state.multiTags.add(val);
+                    renderTags();
+                    input.value = '';
+                }
+            };
+            
+            const renderTags = () => {
+                container.innerHTML = '';
+                state.multiTags.forEach(t => {
+                    const el = document.createElement('span');
+                    el.className = 'tag-chip';
+                    el.textContent = t + ' ×';
+                    el.onclick = () => { state.multiTags.delete(t); renderTags(); };
+                    container.appendChild(el);
+                });
+            };
+            
+            btn.onclick = add;
+            input.onkeydown = e => e.key === 'Enter' && add();
+            
+            document.getElementById('find-multi-tag-btn').onclick = () => {
+                if(state.multiTags.size === 0) return;
+                const tags = Array.from(state.multiTags);
+                // Find papers that have all these tags
+                const papers = state.papers.filter(p => p.tags && tags.every(t => p.tags.includes(t)));
+                
+                document.getElementById('multi-tag-result').textContent = `共 ${papers.length} 篇论文 (交集)`;
+                const list = document.getElementById('multi-tag-result-list');
+                list.innerHTML = papers.map(p => `<div style="padding:5px; border-bottom:1px solid #eee;">${p.title}</div>`).join('');
+                
+                // Highlight tags?
+                const tagIds = new Set(tags);
+                node.classed("dimmed", n => !tagIds.has(n.id));
+            };
+            
+            document.getElementById('clear-multi-tag-btn').onclick = () => {
+                state.multiTags.clear();
+                renderTags();
+                document.getElementById('multi-tag-result').textContent = '';
+                document.getElementById('multi-tag-result-list').innerHTML = '';
+                resetView();
+            };
+        }
+
+        function updateStats() {
+            document.getElementById('stat-nodes').textContent = state.nodes.length;
+            document.getElementById('stat-links').textContent = state.links.length;
+            
+            // Calculate degrees
+            const degrees = {};
+            state.links.forEach(l => {
+                degrees[l.source.id] = (degrees[l.source.id] || 0) + 1;
+                degrees[l.target.id] = (degrees[l.target.id] || 0) + 1;
+            });
+            const maxD = Math.max(0, ...Object.values(degrees));
+            document.getElementById('stat-max-degree').textContent = maxD;
+            
+            const v = state.nodes.length;
+            const density = v > 1 ? (2 * state.links.length / (v * (v - 1))).toFixed(4) : 0;
+            document.getElementById('stat-density').textContent = density;
+        }
+
+        function applyFilters() {
+            const minCo = parseInt(document.getElementById('min-cooc').value) || 1;
+            const minDeg = parseInt(document.getElementById('min-degree').value) || 0;
+            
+            // Recalculate degrees based on VISIBLE links? 
+            // Usually filtering is a pipeline: Filter Links -> Filter Nodes (orphans) or Filter Nodes -> Filter Links.
+            // Let's do: Filter links by weight -> Calculate degrees -> Filter nodes by degree.
+            
+            const visibleLinks = state.links.filter(l => l.value >= minCo);
+            const visibleLinkSet = new Set(visibleLinks);
+            
+            const degrees = {};
+            visibleLinks.forEach(l => {
+                degrees[l.source.id] = (degrees[l.source.id] || 0) + 1;
+                degrees[l.target.id] = (degrees[l.target.id] || 0) + 1;
+            });
+            
+            const visibleNodeIds = new Set();
+            state.nodes.forEach(n => {
+                if((degrees[n.id] || 0) >= minDeg) visibleNodeIds.add(n.id);
+            });
+            
+            node.style("display", n => visibleNodeIds.has(n.id) ? "block" : "none");
+            link.style("display", l => (visibleLinkSet.has(l) && visibleNodeIds.has(l.source.id) && visibleNodeIds.has(l.target.id)) ? "block" : "none");
+        }
+
+        function fitView() {
+            const bounds = g.node().getBBox();
+            const parent = svg.node().parentElement;
+            const fullWidth = parent.clientWidth;
+            const fullHeight = parent.clientHeight;
+            const width = bounds.width;
+            const height = bounds.height;
+            const midX = bounds.x + width / 2;
+            const midY = bounds.y + height / 2;
+            if (width == 0 || height == 0) return;
+            const scale = 0.85 / Math.max(width / fullWidth, height / fullHeight);
+            const translate = [fullWidth / 2 - scale * midX, fullHeight / 2 - scale * midY];
+
+            svg.transition().duration(750)
+                .call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
         }
         
-        // 拖拽开始
-        function dragstarted(event, d) {
+        function dragStart(event, d) {
             if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
         
-        // 拖拽中
-        function dragged(event, d) {
+        function dragging(event, d) {
             d.fx = event.x;
             d.fy = event.y;
         }
         
-        // 拖拽结束
-        function dragended(event, d) {
+        function dragEnd(event, d) {
             if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
-            saveLayout();
         }
         
-        // 搜索
-        function setupSearch() {
-            const input = document.getElementById('search-input');
-            const debounced = debounce(() => {
-                const term = input.value.trim().toLowerCase();
-                if (!term) {
-                    d3.selectAll('.node circle')
-                        .attr('fill-opacity', 1)
-                        .attr('stroke-width', 1.5);
-                    d3.selectAll('.link').attr('stroke-opacity', 0.6);
-                    return;
-                }
-                const matches = nodes.filter(n => n.name.toLowerCase().includes(term));
-                const ids = new Set(matches.map(n => n.id));
-                d3.selectAll('.node').each(function(d){
-                    const on = ids.has(d.id);
-                    d3.select(this).select('circle')
-                        .attr('fill-opacity', on ? 1 : 0.2)
-                        .attr('stroke-width', on ? 3 : 1.5);
-                });
-                d3.selectAll('.link').attr('stroke-opacity', d => 
-                    ids.has(d.source.id) || ids.has(d.target.id) ? 1 : 0.1);
-            }, 150);
-            input.addEventListener('input', debounced);
-            input.addEventListener('keydown', function(e){
-                if (e.key === 'Enter') {
-                    const term = input.value.trim().toLowerCase();
-                    if (!term) return;
-                    const first = nodes.find(n => n.name.toLowerCase().includes(term));
-                    if (first) focusOnNode(first);
-                }
-            });
-            // datalist
-            const dl = document.getElementById('tag-suggestions');
-            dl.innerHTML = '';
-            nodes.forEach(n => {
-                const opt = document.createElement('option');
-                opt.value = n.name;
-                dl.appendChild(opt);
-            });
+        function showTooltip(event, d) {
+            els.tooltip.style.opacity = 1;
+            els.tooltip.style.left = (event.pageX + 10) + 'px';
+            els.tooltip.style.top = (event.pageY - 20) + 'px';
+            els.tooltip.textContent = `${d.name} (${d.count})`;
         }
         
-        // 控制按钮
-        function setupControls(zoom) {
-            document.getElementById('zoom-in').addEventListener('click', () => { svg.transition().duration(300).call(zoom.scaleBy, 1.5); });
-            document.getElementById('zoom-out').addEventListener('click', () => { svg.transition().duration(300).call(zoom.scaleBy, 0.75); });
-            document.getElementById('reset-zoom').addEventListener('click', () => {
-                svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity.translate(width/2, height/2).scale(1).translate(-width/2, -height/2));
-            });
-            document.getElementById('fit-view').addEventListener('click', fitToView);
-            document.getElementById('export-png').addEventListener('click', exportAsPNG);
-            document.getElementById('toggle-dark').addEventListener('click', toggleTheme);
-            document.getElementById('clear-layout').addEventListener('click', () => {
-                if (confirm('确定要删除保存的布局并恢复默认吗？')) {
-                    localStorage.removeItem('qkg_layout_tags');
-                    location.reload();
-                }
-            });
-        }
-        
-        // 键盘快捷键：方向键平移、+/-缩放
-        function setupKeyboardShortcuts() {
-            window.addEventListener('keydown', function(e) {
-                if (!svg) return;
-                const pan = 50;
-                let t = d3.zoomTransform(svg.node());
-                if (e.key === 'ArrowUp') t.y += pan;
-                else if (e.key === 'ArrowDown') t.y -= pan;
-                else if (e.key === 'ArrowLeft') t.x += pan;
-                else if (e.key === 'ArrowRight') t.x -= pan;
-                else if (e.key === '+') { svg.call(zoom.scaleBy, 1.2); return; }
-                else if (e.key === '-') { svg.call(zoom.scaleBy, 0.8); return; }
-                else return;
-                svg.call(zoom.transform, t);
-            });
+        function hideTooltip() {
+            els.tooltip.style.opacity = 0;
         }
 
-        // 保存/加载布局
-        function saveLayout() {
-            try {
-                const pos = {};
-                nodes.forEach(n => pos[n.id] = { x: n.x, y: n.y });
-                localStorage.setItem('qkg_layout_tags', JSON.stringify(pos));
-            } catch(e) {}
-        }
-        function loadLayout() {
-            try {
-                const raw = localStorage.getItem('qkg_layout_tags');
-                if (!raw) return;
-                const pos = JSON.parse(raw);
-                nodes.forEach(n => { if (pos[n.id]) { n.x = pos[n.id].x; n.y = pos[n.id].y; } });
-            } catch(e) {}
-        }
-
-        // 适配全图
-        function fitToView() {
-            if (!g) return;
-            const bounds = g.node().getBBox();
-            const fullWidth = width, fullHeight = height;
-            const widthScale = fullWidth / bounds.width;
-            const heightScale = fullHeight / bounds.height;
-            const scale = Math.max(0.1, Math.min(4, 0.9 * Math.min(widthScale, heightScale)));
-            const translateX = fullWidth / 2 - (bounds.x + bounds.width / 2) * scale;
-            const translateY = fullHeight / 2 - (bounds.y + bounds.height / 2) * scale;
-            svg.transition().duration(500)
-                .call(zoom.transform, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
-        }
-
-        // 导出为PNG
-        function exportAsPNG() {
-            if (!svg) return;
+        function exportPNG() {
             const svgNode = svg.node();
             const serializer = new XMLSerializer();
             let source = serializer.serializeToString(svgNode);
@@ -976,9 +1009,10 @@
             const image = new Image();
             image.onload = function() {
                 const canvas = document.createElement('canvas');
-                canvas.width = width; canvas.height = height;
+                canvas.width = state.width;
+                canvas.height = state.height;
                 const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = document.body.classList.contains('dark') ? '#121212' : '#f0f2f5';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(image, 0, 0);
                 const a = document.createElement('a');
@@ -989,142 +1023,9 @@
             image.src = url;
         }
 
-        function debounce(fn, wait) {
-            let t; return function(){ const args = arguments; clearTimeout(t); t = setTimeout(()=>fn.apply(null,args), wait); };
-        }
-        
-        // 窗口大小改变时重新调整图形大小
-        window.addEventListener('resize', () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            
-            svg.attr("width", width)
-               .attr("height", height);
-            
-            simulation.force("center", d3.forceCenter(width / 2, height / 2))
-                      .restart();
-        });
-        
-        // 加载数据并初始化图形
-        loadData();
+        // Boot
+        init();
 
-        function setupFilters() {
-            document.getElementById('min-cooc').addEventListener('input', applyFilters);
-            document.getElementById('min-degree').addEventListener('input', applyFilters);
-        }
-        function applyFilters() {
-            const minCo = parseInt(document.getElementById('min-cooc').value, 10) || 1;
-            const minDeg = parseInt(document.getElementById('min-degree').value, 10) || 0;
-            // 计算度
-            const degree = new Map();
-            nodes.forEach(n => degree.set(n.id, 0));
-            links.forEach(l => { degree.set(l.source.id, degree.get(l.source.id) + 1); degree.set(l.target.id, degree.get(l.target.id) + 1); });
-            // 过滤连线
-            d3.selectAll('.link').style('display', d => (d.value >= minCo) ? null : 'none');
-            // 过滤节点
-            d3.selectAll('.node').style('display', function(d){ return (degree.get(d.id) >= minDeg) ? null : 'none'; });
-        }
-        function initializeTheme() { const t = localStorage.getItem('qkg_theme') || 'light'; if (t === 'dark') document.body.classList.add('dark'); }
-        function toggleTheme() { document.body.classList.toggle('dark'); localStorage.setItem('qkg_theme', document.body.classList.contains('dark') ? 'dark' : 'light'); }
-        
-        // 多标签检索（交集）
-        function setupMultiTagSearch() {
-            const input = document.getElementById('multi-tag-input');
-            const addBtn = document.getElementById('add-tag-btn');
-            const findBtn = document.getElementById('find-multi-tag-btn');
-            const clearBtn = document.getElementById('clear-multi-tag-btn');
-            const dl = document.getElementById('multi-tag-suggestions');
-            
-            // datalist
-            try {
-                dl.innerHTML = '';
-                allTagsList.forEach(tag => { const opt = document.createElement('option'); opt.value = tag; dl.appendChild(opt); });
-            } catch(e) {}
-            
-            function addTag(tag) {
-                if (!tag) return;
-                if (!allTagsList.includes(tag)) return;
-                selectedSearchTags.add(tag);
-                input.value = '';
-                renderSelectedTags();
-            }
-            addBtn.addEventListener('click', () => addTag((input.value||'').trim()));
-            input.addEventListener('keydown', (e) => { if (e.key === 'Enter') addTag((input.value||'').trim()); });
-            findBtn.addEventListener('click', runMultiTagSearch);
-            clearBtn.addEventListener('click', () => { selectedSearchTags.clear(); renderSelectedTags(); clearMultiTagHighlight(); updateMultiTagResult('', []); });
-            
-            renderSelectedTags();
-        }
-        function renderSelectedTags() {
-            const box = document.getElementById('selected-tags-container');
-            box.innerHTML = '';
-            Array.from(selectedSearchTags).forEach(tag => {
-                const chip = document.createElement('span');
-                chip.className = 'related-tag';
-                chip.textContent = tag + ' ×';
-                chip.style.border = '1px solid #1f77b4';
-                chip.addEventListener('click', () => { selectedSearchTags.delete(tag); renderSelectedTags(); });
-                box.appendChild(chip);
-            });
-        }
-        function runMultiTagSearch() {
-            const terms = Array.from(selectedSearchTags);
-            if (terms.length === 0) { clearMultiTagHighlight(); updateMultiTagResult('', []); return; }
-            // 找到同时包含这些标签的论文
-            const matchedPapers = papers.filter(p => terms.every(t => p.tags && p.tags.includes(t)));
-            updateMultiTagResult(`共 ${matchedPapers.length} 篇`, matchedPapers.slice(0, 100));
-            // 高亮与这些论文相关的标签节点（出现在这些论文中的所有标签）
-            const relatedTagSet = new Set();
-            matchedPapers.forEach(p => (p.tags||[]).forEach(t => relatedTagSet.add(t)));
-            highlightTagsByIds(Array.from(relatedTagSet));
-        }
-        function highlightTagsByIds(tagIds) {
-            const idSet = new Set(tagIds);
-            d3.selectAll('.node').each(function(d){
-                const match = idSet.has(d.id);
-                const circle = d3.select(this).select('circle');
-                circle
-                    .attr('fill-opacity', match ? 1 : 0.15)
-                    .attr('r', match ? getNodeRadius(d) * 1.3 : getNodeRadius(d))
-                    .attr('stroke-width', match ? 3 : 1.5);
-            });
-            d3.selectAll('.link').attr('stroke-opacity', d => (idSet.has(d.source.id) && idSet.has(d.target.id)) ? 0.9 : 0.05);
-        }
-        function clearMultiTagHighlight() {
-            d3.selectAll('.node circle')
-                .attr('fill-opacity', 1)
-                .attr('stroke-width', 1.5)
-                .attr('r', d => getNodeRadius(d));
-            d3.selectAll('.link').attr('stroke-opacity', 0.6);
-        }
-        function updateMultiTagResult(text, matchedPapers) {
-            const label = document.getElementById('multi-tag-result');
-            label.textContent = text || '';
-            const list = document.getElementById('multi-tag-result-list');
-            list.innerHTML = '';
-            (matchedPapers||[]).forEach(p => {
-                const item = document.createElement('div');
-                item.className = 'paper-item';
-                const titleElem = document.createElement('strong');
-                titleElem.textContent = p.title;
-                item.appendChild(titleElem);
-                if (p.authors && p.authors.length) {
-                    const authorsElem = document.createElement('div');
-                    authorsElem.textContent = `作者: ${p.authors.join(', ')}`;
-                    authorsElem.style.fontSize = '12px';
-                    authorsElem.style.marginTop = '5px';
-                    item.appendChild(authorsElem);
-                }
-                if (p.year) {
-                    const yearElem = document.createElement('div');
-                    yearElem.textContent = `年份: ${p.year}`;
-                    yearElem.style.fontSize = '12px';
-                    yearElem.style.marginTop = '3px';
-                    item.appendChild(yearElem);
-                }
-                list.appendChild(item);
-            });
-        }
     </script>
 </body>
 </html> 
