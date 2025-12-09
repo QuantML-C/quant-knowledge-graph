@@ -379,7 +379,7 @@
     <div id="loading-screen">
         <div class="loader"></div>
         <div style="font-weight: 500; color: var(--primary-color);">正在构建图谱...</div>
-    </div>
+        </div>
 
     <div id="container">
         <!-- Sidebar -->
@@ -387,17 +387,17 @@
             <div class="sidebar-header">
                 <h1>📚 论文知识图谱</h1>
                 <div style="font-size: 12px; color: #666;">v1.2</div>
-            </div>
-
+        </div>
+        
             <div class="sidebar-content">
                 
                 <!-- Search Section -->
                 <div class="search-box">
                     <input type="text" id="search-input" placeholder="搜索论文、作者或标签..." list="search-suggestions">
                     <span class="material-icons search-icon">search</span>
-                    <datalist id="search-suggestions"></datalist>
-                </div>
-
+            <datalist id="search-suggestions"></datalist>
+        </div>
+        
                 <!-- Default View: Stats & Filters -->
                 <div id="default-panel" class="info-content active">
                     <div class="sidebar-section">
@@ -406,22 +406,22 @@
                             <div class="stat-item">
                                 <div class="stat-value" id="stat-papers">0</div>
                                 <div class="stat-label">论文数</div>
-                            </div>
+            </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="stat-tags">0</div>
                                 <div class="stat-label">标签数</div>
-                            </div>
+        </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="stat-links">0</div>
                                 <div class="stat-label">连接数</div>
-                            </div>
+            </div>
                             <div class="stat-item">
                                 <div class="stat-value" id="stat-density">0</div>
                                 <div class="stat-label">密度</div>
                             </div>
-                        </div>
-                    </div>
-
+            </div>
+        </div>
+        
                     <div class="sidebar-section">
                         <h3>🛠️ 过滤器</h3>
                         <div style="margin-bottom: 10px;">
@@ -431,36 +431,36 @@
                             <label style="display:flex; align-items:center; cursor:pointer;">
                                 <input type="checkbox" id="toggle-tags" checked style="margin-right:8px;"> 显示标签节点
                             </label>
-                        </div>
+            </div>
                         <div style="display:flex; align-items:center; gap:10px;">
                             <span style="font-size:12px;">年份:</span>
                             <input type="number" id="year-min" class="filter-input" style="width:60px; padding:4px; border-radius:4px; border:1px solid #ddd;">
                             <span>-</span>
                             <input type="number" id="year-max" class="filter-input" style="width:60px; padding:4px; border-radius:4px; border:1px solid #ddd;">
-                        </div>
-                    </div>
+            </div>
+            </div>
 
                     <div class="sidebar-section">
                         <h3>🔍 多标签检索</h3>
                         <div class="multi-tag-area">
                             <div style="display:flex; gap:5px; margin-bottom:8px;">
                                 <input type="text" id="multi-tag-input" list="multi-tag-suggestions" placeholder="输入标签..." style="flex:1; padding:6px; border-radius:4px; border:1px solid #ddd;">
-                                <datalist id="multi-tag-suggestions"></datalist>
+                    <datalist id="multi-tag-suggestions"></datalist>
                                 <button id="add-tag-btn" style="background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer;">+</button>
-                            </div>
+                </div>
                             <div id="selected-tags-container" class="tag-cloud"></div>
                             <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                                <span id="multi-tag-result" style="font-size:12px; color:#666;"></span>
+                    <span id="multi-tag-result" style="font-size:12px; color:#666;"></span>
                                 <div>
                                     <button id="find-multi-tag-btn" style="padding:4px 8px; background:var(--primary-color); color:white; border:none; border-radius:4px; cursor:pointer; font-size:12px;">查找</button>
                                     <button id="clear-multi-tag-btn" style="padding:4px 8px; background:#ddd; border:none; border-radius:4px; cursor:pointer; font-size:12px;">重置</button>
-                                </div>
+                </div>
                             </div>
                             <div id="multi-tag-result-list" style="margin-top:10px; max-height:150px; overflow-y:auto;"></div>
                         </div>
-                    </div>
-                </div>
-
+            </div>
+        </div>
+        
                 <!-- Details View: Selected Node Info -->
                 <div id="details-panel" class="info-content">
                     <button id="back-to-stats" style="margin-bottom:15px; background:transparent; border:none; color:var(--primary-color); cursor:pointer; display:flex; align-items:center; font-weight:600;">
@@ -469,7 +469,7 @@
                     
                     <div id="node-details">
                         <!-- Dynamic Content Here -->
-                    </div>
+        </div>
 
                     <div class="sidebar-section" style="margin-top:20px;">
                         <h3>操作</h3>
@@ -491,8 +491,8 @@
         <!-- Graph Visualization -->
         <div id="graph-area">
             <div id="graph"></div>
-            
-            <div class="tooltip" id="node-tooltip"></div>
+        
+        <div class="tooltip" id="node-tooltip"></div>
             
             <div class="controls-overlay">
                 <button class="control-btn" id="zoom-in" title="放大"><span class="material-icons">add</span></button>
@@ -600,7 +600,7 @@
             state.nodes = papers.map(p => ({
                 id: p.id,
                 name: p.title,
-                type: 'paper',
+                        type: 'paper',
                 data: p,
                 r: 8
             }));
@@ -609,12 +609,12 @@
                 state.nodes.push({
                     id: `tag-${t}`,
                     name: t,
-                    type: 'tag',
+                        type: 'tag',
                     data: { tag: t },
                     r: 5
+                    });
                 });
-            });
-
+                
             // Create Links
             papers.forEach(p => {
                 if (p.tags) {
@@ -622,12 +622,12 @@
                         state.links.push({
                             source: p.id,
                             target: `tag-${t}`,
-                            value: 1
+                                value: 1
+                            });
                         });
-                    });
-                }
-            });
-
+                    }
+                });
+                
             // Calculate Tag Weights (Degree)
             const tagCounts = {};
             state.links.forEach(l => {
@@ -684,15 +684,15 @@
             zoom = d3.zoom()
                 .scaleExtent([0.1, 8])
                 .on("zoom", e => g.attr("transform", e.transform));
-
+            
             svg.call(zoom);
-
+            
             simulation = d3.forceSimulation(state.nodes)
                 .force("link", d3.forceLink(state.links).id(d => d.id).distance(100))
                 .force("charge", d3.forceManyBody().strength(-300))
                 .force("center", d3.forceCenter(width / 2, height / 2))
                 .force("collide", d3.forceCollide().radius(d => d.r + 5).iterations(2));
-
+            
             link = g.append("g")
                 .selectAll("line")
                 .data(state.links)
@@ -713,13 +713,13 @@
                 .on("click", handleNodeClick)
                 .on("mouseover", showTooltip)
                 .on("mouseout", hideTooltip);
-
+            
             node.append("circle")
                 .attr("r", d => d.r)
                 .attr("fill", d => d.type === 'paper' ? '#ff7f0e' : '#1f77b4')
                 .attr("stroke", "#fff")
                 .attr("stroke-width", 1.5);
-
+            
             node.append("text")
                 .text(d => d.type === 'tag' ? (d.name.length > 10 ? d.name.slice(0,10)+'...' : d.name) : '')
                 .attr("font-size", 10)
@@ -735,7 +735,7 @@
                     .attr("y1", d => d.source.y)
                     .attr("x2", d => d.target.x)
                     .attr("y2", d => d.target.y);
-
+                
                 node
                     .attr("transform", d => `translate(${d.x},${d.y})`);
             });
@@ -833,12 +833,29 @@
                 `;
             } else {
                 // Tag Info
-                 const relatedPapers = state.links.filter(l => l.target.id === d.id).length;
+                 const relatedPapers = state.nodes
+                    .filter(n => n.type === 'paper' && n.data.tags && n.data.tags.includes(d.name))
+                    .slice(0, 120); // cap to avoid huge DOM
                  html = `
                     <div class="info-card" style="border-left-color: #1f77b4;">
                         <h2 style="margin:0 0 10px 0; font-size:1.1rem;">标签: ${d.name}</h2>
                         <div style="font-size:0.9rem; color:#666;">
-                            关联论文数: ${relatedPapers}
+                            关联论文数: ${relatedPapers.length}
+                        </div>
+                    </div>
+                    <div class="sidebar-section">
+                        <h3>相关论文</h3>
+                        <div style="max-height:240px; overflow:auto;">
+                            ${
+                                relatedPapers.length
+                                ? relatedPapers.map(p => `
+                                    <div class="paper-link" style="margin-bottom:6px;" onclick="focusNodeById('${p.id}')">
+                                        <div style="font-weight:600; color:#333;">${p.data.title}</div>
+                                        <div style="font-size:12px; color:#777;">${p.data.year || 'N/A'} · ${(p.data.authors||[])[0] || '未知作者'}</div>
+                                    </div>
+                                `).join('')
+                                : '<div style="color:#888;">暂无关联论文</div>'
+                            }
                         </div>
                     </div>
                 `;
@@ -864,7 +881,7 @@
                 
                 node.style("display", n => connectedIds.has(n.id) ? "block" : "none");
                 link.style("display", l => connectedIds.has(l.source.id) && connectedIds.has(l.target.id) ? "block" : "none");
-            } else {
+                } else {
                 // Show all (respecting filters)
                 applyFilters();
             }
@@ -875,6 +892,13 @@
             const target = state.nodes.find(n => n.name === name || n.id === `tag-${name}`);
             if (target) {
                  handleNodeClick({stopPropagation:()=>{}}, target);
+            }
+        }
+        // 专用：通过节点 ID 聚焦（用于列表点击）
+        function focusNodeById(id) {
+            const target = state.nodes.find(n => n.id === id);
+            if (target) {
+                handleNodeClick({stopPropagation:()=>{}}, target);
             }
         }
         
@@ -1127,7 +1151,7 @@
         }
 
         function exportPNG() {
-             const svgNode = svg.node();
+            const svgNode = svg.node();
             const serializer = new XMLSerializer();
             let source = serializer.serializeToString(svgNode);
             if (!source.match(/^<svg[^>]+xmlns="http\:\/\/www\.w3\.org\/2000\/svg"/)) {
@@ -1151,10 +1175,10 @@
             };
             image.src = url;
         }
-
+        
         // Boot
         init();
 
     </script>
 </body>
-</html>
+</html> 

@@ -642,10 +642,10 @@
             
             svg.call(zoom);
             
-            // Color Scale
+            // Color Scale (use a valid d3 interpolator)
             const colorScale = d3.scaleSequential()
-                .domain([0, d3.max(state.nodes, d => d.count)])
-                .interpolator(d3.interpolateTeal);
+                .domain([0, d3.max(state.nodes, d => d.count) || 1])
+                .interpolator(d3.interpolateGnBu);
 
             simulation = d3.forceSimulation(state.nodes)
                 .force("link", d3.forceLink(state.links).id(d => d.id).distance(150))
@@ -912,11 +912,13 @@
             document.getElementById('stat-nodes').textContent = state.nodes.length;
             document.getElementById('stat-links').textContent = state.links.length;
             
-            // Calculate degrees
+            // Calculate degrees (robust for both pre/post forceLink)
             const degrees = {};
             state.links.forEach(l => {
-                degrees[l.source.id] = (degrees[l.source.id] || 0) + 1;
-                degrees[l.target.id] = (degrees[l.target.id] || 0) + 1;
+                const sid = typeof l.source === 'object' ? l.source.id : l.source;
+                const tid = typeof l.target === 'object' ? l.target.id : l.target;
+                if (sid) degrees[sid] = (degrees[sid] || 0) + 1;
+                if (tid) degrees[tid] = (degrees[tid] || 0) + 1;
             });
             const maxD = Math.max(0, ...Object.values(degrees));
             document.getElementById('stat-max-degree').textContent = maxD;
@@ -939,8 +941,10 @@
             
             const degrees = {};
             visibleLinks.forEach(l => {
-                degrees[l.source.id] = (degrees[l.source.id] || 0) + 1;
-                degrees[l.target.id] = (degrees[l.target.id] || 0) + 1;
+                const sid = typeof l.source === 'object' ? l.source.id : l.source;
+                const tid = typeof l.target === 'object' ? l.target.id : l.target;
+                if (sid) degrees[sid] = (degrees[sid] || 0) + 1;
+                if (tid) degrees[tid] = (degrees[tid] || 0) + 1;
             });
             
             const visibleNodeIds = new Set();
