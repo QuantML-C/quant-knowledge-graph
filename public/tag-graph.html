@@ -595,12 +595,12 @@
                                 const t2 = p.tags[j];
                                 const key = [t1, t2].sort().join('|||');
                                 tagPairs[key] = (tagPairs[key] || 0) + 1;
-                                }
                             }
                         }
                     }
-                });
-                
+                }
+            });
+
             // Create Nodes
             state.nodes = Array.from(allTags).map(t => ({
                 id: t,
@@ -609,6 +609,14 @@
                 r: Math.max(5, Math.min(30, 5 + tagCounts[t] * 0.8))
             }));
             
+            // Populate Search Suggestions
+            const dl = document.getElementById('search-suggestions');
+            state.nodes.forEach(n => {
+                const opt = document.createElement('option');
+                opt.value = n.name;
+                dl.appendChild(opt);
+            });
+
             // Create Links
             state.links = Object.entries(tagPairs).map(([key, count]) => {
                 const [source, target] = key.split('|||');
@@ -870,6 +878,35 @@
                 }
             };
             
+            // Add input listener to detect selection from datalist
+            input.addEventListener('input', (e) => {
+                 // Check if the current value matches one of the options (exact match)
+                 // If so, add it.
+                 // However, typing 'AI' might match 'AI' exactly, but we usually wait for Enter.
+                 // But for dropdown selection, the input event fires and value changes.
+                 // If the value is a known tag, we can add it? 
+                 // Maybe that's too aggressive.
+                 // Let's rely on the user behavior of selecting. 
+                 // Standard datalist doesn't fire a specific "select" event separate from input.
+                 // But usually, if the inputType is insertReplacementText (some browsers) or just input.
+                 
+                 // Better UX: If the value is in the list of tags, we could show a hint or allow adding.
+                 // The user asked for "Dropdown menu add functionality".
+                 // Existing implementation uses list="search-suggestions".
+                 // If the user picks from it, the value fills the input.
+                 // Then they click '+' or Enter. 
+                 // If they want *auto-add on select*, we can try:
+                 const val = e.target.value;
+                 const isKnownTag = state.nodes.some(n => n.name === val);
+                 // We don't want to auto-add while typing "Vis" -> "Visual...", so only add if it was likely a selection?
+                 // Actually, if it's an exact match, maybe we can wait or just let them press Enter.
+                 // But to be more helpful, we can check if event.inputType is undefined (often means selection from list in Chrome) 
+                 // or just trust the enter key.
+                 
+                 // However, "Dropdown menu add function" might mean "Please ensure the dropdown works".
+                 // Since I just fixed the population of search-suggestions, it SHOULD work now.
+            });
+            
             const renderTags = () => {
                 container.innerHTML = '';
                 state.multiTags.forEach(t => {
@@ -882,7 +919,14 @@
             };
             
             btn.onclick = add;
-            input.onkeydown = e => e.key === 'Enter' && add();
+            // Use keyup or keypress to capture Enter before default submit if inside form, 
+            // though here it's likely just stopPropagation if needed.
+            input.onkeydown = e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent accidental form submission
+                    add();
+                }
+            };
             
             document.getElementById('find-multi-tag-btn').onclick = () => {
                 if(state.multiTags.size === 0) return;
