@@ -1,342 +1,636 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuantML 知识图谱 | 首页</title>
+    <title>QuantML 知识图谱</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
+        :root {
+            /* Apple-like Color Palette */
+            --bg-color: #F5F5F7; /* Light Gray Background */
+            --text-primary: #1D1D1F; /* Almost Black */
+            --text-secondary: #86868B; /* Dark Gray */
+            --accent-blue: #0071E3; /* Apple Blue */
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(255, 255, 255, 0.4);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --glass-blur: blur(20px);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        body.dark {
+            --bg-color: #000000;
+            --text-primary: #F5F5F7;
+            --text-secondary: #86868B;
+            --accent-blue: #2997FF;
+            --card-bg: rgba(28, 28, 30, 0.8);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
-            color: #333;
+            transition: background-color 0.5s ease, color 0.5s ease;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        header {
-            margin-bottom: 30px;
-        }
-        .hero {
-            background: linear-gradient(135deg, #1f77b4 0%, #4dabf7 100%);
-            color: #fff;
-            border-radius: 16px;
-            padding: 36px 28px;
-            box-shadow: 0 8px 20px rgba(31, 119, 180, 0.25);
-        }
-        .hero h1 {
-            font-size: 2rem;
-            margin: 0 0 10px 0;
-        }
-        .hero p {
-            margin: 0;
-            opacity: 0.95;
-            line-height: 1.6;
-        }
-        .hero-actions {
-            margin-top: 18px;
+
+        /* --- Header / Nav --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 52px;
+            background: var(--card-bg);
+            backdrop-filter: saturate(180%) var(--glass-blur);
+            -webkit-backdrop-filter: saturate(180%) var(--glass-blur);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            z-index: 1000;
             display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-flex;
             align-items: center;
-            gap: 8px;
-            background: #ffffff;
-            color: #1f77b4;
-            border: none;
-            border-radius: 22px;
-            padding: 10px 14px;
-            font-weight: bold;
-            text-decoration: none;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(255,255,255,0.2);
+            justify-content: center;
+            transition: background 0.3s;
         }
-        .btn.secondary { background: rgba(255,255,255,0.15); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,0.25); }
-        .btn:hover { filter: brightness(0.98); }
-        .top-bar {
+        
+        body.dark .navbar { border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        .nav-content {
+            width: 100%;
+            max-width: 1024px;
+            padding: 0 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 16px 0 32px 0;
         }
-        .search-wrap {
+
+        .logo {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            text-decoration: none;
             display: flex;
+            align-items: center;
             gap: 8px;
-            flex: 1;
-            max-width: 640px;
         }
-        #home-search {
-            flex: 1;
-            padding: 12px 16px 12px 40px;
-            border-radius: 24px;
-            border: 1px solid #ddd;
-            background: #fff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="%23999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>') no-repeat 12px center;
-            font-size: 14px;
-        }
-        .search-btn { padding: 12px 18px; border-radius: 24px; background: #1f77b4; color: #fff; border: none; cursor: pointer; }
-        .search-btn:hover { background: #155d8e; }
-        .dark-toggle { margin-left: 12px; padding: 10px 12px; border-radius: 20px; background: #eee; border: none; cursor: pointer; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+        .nav-actions {
+            display: flex;
             gap: 16px;
-            margin-bottom: 28px;
+            align-items: center;
         }
-        .stat-card {
-            background: #fff;
-            border-radius: 10px;
-            padding: 16px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .stat-label { color: #666; font-size: 12px; }
-        .stat-value { font-size: 22px; color: #1f77b4; font-weight: bold; margin-top: 6px; }
-        .sections {
+        
+        .icon-btn:hover { background: rgba(128,128,128,0.1); }
+
+        /* --- Hero Section --- */
+        .hero {
+            padding-top: 140px;
+            padding-bottom: 80px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            line-height: 1.05;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            font-size: 24px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-bottom: 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 980px;
+            font-size: 17px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 15px rgba(0, 113, 227, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(128,128,128,0.1);
+            color: var(--accent-blue);
+        }
+        .btn-secondary:hover {
+            background: rgba(128,128,128,0.15);
+        }
+
+        /* --- Search Bar --- */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto 60px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 16px 20px 16px 50px;
+            font-size: 16px;
+            border: none;
+            border-radius: 16px;
+            background: var(--card-bg);
+            box-shadow: var(--shadow-sm);
+            color: var(--text-primary);
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            box-sizing: border-box;
+        }
+
+        .search-input:focus {
+            outline: none;
+            box-shadow: var(--shadow-md);
+            transform: scale(1.01);
+        }
+
+        .search-icon-inside {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            pointer-events: none;
+        }
+
+        /* --- Bento Grid --- */
+        .grid-section {
+            max-width: 1080px;
+            margin: 0 auto 80px;
+            padding: 0 24px;
             display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: auto auto;
             gap: 24px;
         }
-        @media (max-width: 900px) {
-            .sections { grid-template-columns: 1fr; }
-            .search-wrap { max-width: none; }
-        }
-        .card {
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-            padding: 18px;
-        }
-        .card h3 { margin: 0 0 12px 0; }
-        .tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
-        .tag-chip {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 16px;
-            background: #eef6fd;
-            color: #1f77b4;
+
+        .bento-card {
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: var(--transition);
             cursor: pointer;
-            border: 1px solid #d7ebfb;
-            font-size: 12px;
+            overflow: hidden;
+            position: relative;
+            text-decoration: none;
+            color: var(--text-primary);
         }
-        .tag-chip:hover { background: #dff0ff; }
-        .paper-list { list-style: none; padding: 0; margin: 0; }
-        .paper-item { padding: 10px 0; border-bottom: 1px dashed #eee; }
-        .paper-item:last-child { border-bottom: none; }
-        .paper-title { font-weight: bold; }
-        .paper-meta { color: #777; font-size: 12px; margin-top: 4px; }
-        .visualizations { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
-        .viz-card { background-color: white; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
-        .viz-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); }
-        .viz-img { width: 100%; height: 180px; background-size: cover; background-position: center; }
-        .viz-content { padding: 16px; }
-        .viz-title { font-size: 1.1rem; margin: 0 0 8px 0; color: #1f77b4; }
-        .viz-description { color: #555; font-size: 13px; line-height: 1.5; }
-        .viz-link { display: inline-block; margin-top: 10px; background-color: #1f77b4; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; }
-        .viz-link:hover { background-color: #155d8e; }
-        footer { margin-top: 40px; text-align: center; color: #777; font-size: 0.9rem; }
-        /* Dark theme */
-        body.dark { background-color: #0f1115; color: #e8e8e8; }
-        body.dark .hero { background: linear-gradient(135deg, #111827 0%, #1f2937 100%); box-shadow: 0 8px 20px rgba(17,24,39,0.55); }
-        body.dark .btn { background: #1f77b4; color: #fff; }
-        body.dark .btn.secondary { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); }
-        body.dark .search-btn { background: #1f77b4; }
-        body.dark #home-search { background-color: #121721; color: #e8e8e8; border-color: #2a2f3a; }
-        body.dark .stat-card, body.dark .card, body.dark .viz-card { background: #121721; box-shadow: 0 4px 12px rgba(0,0,0,0.35); }
-        body.dark .viz-title { color: #76c0ff; }
-        body.dark .tag-chip { background: #0e1621; color: #9cd3ff; border-color: #1b2836; }
-        body.dark .tag-chip:hover { background: #112031; }
-        body.dark .dark-toggle { background: #121721; color: #e8e8e8; border: 1px solid #2a2f3a; }
+
+        .bento-card:hover {
+            transform: scale(1.02);
+            box-shadow: var(--shadow-md);
+            z-index: 10;
+        }
+
+        .bento-card h3 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+        }
+
+        .bento-card p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: var(--accent-blue);
+        }
+
+        .card-large {
+            grid-column: span 2;
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(0, 113, 227, 0.05) 100%);
+        }
+
+        .card-tall {
+            grid-row: span 2;
+        }
+
+        /* --- Stats Section --- */
+        .stats-strip {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            padding: 40px 0;
+            border-top: 1px solid rgba(128,128,128,0.1);
+            border-bottom: 1px solid rgba(128,128,128,0.1);
+            margin-bottom: 60px;
+            background: rgba(255,255,255,0.02);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .stat-lbl {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* --- Tag Cloud (Simple) --- */
+        .tags-section {
+            max-width: 800px;
+            margin: 0 auto 80px;
+            text-align: center;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+
+        .tag-pill {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 6px;
+            border-radius: 20px;
+            background: rgba(128,128,128,0.08);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .tag-pill:hover {
+            background: var(--accent-blue);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            padding: 60px 24px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            background: var(--card-bg);
+            border-top: 1px solid var(--card-border);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .contact-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 24px;
+            background: rgba(128,128,128,0.05);
+            border-radius: 99px;
+            border: 1px solid rgba(128,128,128,0.1);
+            transition: var(--transition);
+        }
+
+        .contact-box:hover {
+            background: rgba(128,128,128,0.08);
+            transform: translateY(-1px);
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .divider {
+            width: 1px;
+            height: 16px;
+            background: rgba(128,128,128,0.3);
+        }
+
+        .qr-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .qr-link:hover { opacity: 0.7; }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 40px; }
+            .hero p { font-size: 18px; }
+            .grid-section { grid-template-columns: 1fr; }
+            .card-large { grid-column: span 1; }
+            .card-tall { grid-row: span 1; }
+            .stats-strip { flex-direction: column; gap: 30px; }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="hero">
-                <h1>QuantML 量化论文知识图谱</h1>
-                <p>社区致力于机器学习量化模型深度研究，每天分享前沿论文、策略代码与 Alpha 因子。连接论文与主题，助你高效探索。</p>
-                <div class="hero-actions">
-                    <a href="index.html" class="btn">进入 论文-标签图谱</a>
-                    <a href="tag-graph.html" class="btn secondary">进入 标签关系图谱</a>
-                </div>
-            </div>
-            <div class="top-bar">
-                <div class="search-wrap">
-                    <input id="home-search" placeholder="搜索论文标题或标签，回车直达可视化..." list="home-suggestions" />
-                    <datalist id="home-suggestions"></datalist>
-                    <button class="search-btn" id="home-search-go">搜索</button>
-                </div>
-                <button class="dark-toggle" id="home-toggle-dark">🌓</button>
-            </div>
-            <div class="stats">
-                <div class="stat-card"><div class="stat-label">论文数量</div><div class="stat-value" id="stat-papers">-</div></div>
-                <div class="stat-card"><div class="stat-label">主题标签</div><div class="stat-value" id="stat-tags">-</div></div>
-                <div class="stat-card"><div class="stat-label">时间跨度</div><div class="stat-value" id="stat-years">-</div></div>
-            </div>
-        </header>
 
-        <div class="sections">
-            <div>
-                <div class="card">
-                    <h3>热门标签</h3>
-                    <div class="tag-cloud" id="tag-cloud"></div>
-                </div>
-                <div class="card" style="margin-top:16px;">
-                    <h3>快速入口</h3>
-                    <div class="visualizations">
-                        <div class="viz-card">
-                            <div class="viz-img" style="background-image: url('https://images.unsplash.com/photo-1501504905252-473c47e087f8?auto=format&fit=crop&w=800&q=60');"></div>
-                            <div class="viz-content">
-                                <h4 class="viz-title">论文-标签图谱</h4>
-                                <p class="viz-description">直观查看每篇论文与其主题之间的连接，点击节点查看摘要、作者与年份。</p>
-                                <a href="index.html" class="viz-link">进入</a>
-                            </div>
-                        </div>
-                        <div class="viz-card">
-                            <div class="viz-img" style="background-image: url('https://images.unsplash.com/photo-1557324232-b8917d3c3dcb?auto=format&fit=crop&w=800&q=60');"></div>
-                            <div class="viz-content">
-                                <h4 class="viz-title">标签关系图谱</h4>
-                                <p class="viz-description">发现主题之间的共现关系与聚类结构，点击标签查看相关论文列表。</p>
-                                <a href="tag-graph.html" class="viz-link">进入</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="card">
-                    <h3>最新论文</h3>
-                    <ul class="paper-list" id="latest-papers"></ul>
-                </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="#" class="logo">
+                <span class="material-icons" style="color:var(--accent-blue);">auto_graph</span>
+                QuantML Graph
+            </a>
+            <div class="nav-actions">
+                <button class="icon-btn" id="theme-toggle" title="切换主题">
+                    <span class="material-icons">dark_mode</span>
+                </button>
             </div>
         </div>
+    </nav>
 
-        <footer>
-            <p>沪ICP备2024094409号-1</p>
-        </footer>
+    <!-- Hero -->
+    <div class="hero">
+        <h1>探索量化与AI的<br>知识宇宙</h1>
+        <p>连接前沿论文、策略与因子的智能图谱。<br>深度挖掘学术关联，发现量化投资新灵感。</p>
+        
+        <div class="hero-buttons">
+            <a href="index.html" class="btn btn-primary">开始探索</a>
+            <a href="tag-graph.html" class="btn btn-secondary">浏览主题</a>
+        </div>
     </div>
 
+    <!-- Search -->
+    <div class="search-container">
+        <span class="material-icons search-icon-inside">search</span>
+        <input type="text" id="home-search" class="search-input" placeholder="搜索论文标题、作者或标签..." list="search-list">
+        <datalist id="search-list"></datalist>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+        <div class="stat-item">
+            <span class="stat-val" id="stat-papers">0</span>
+            <span class="stat-lbl">收录论文</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val" id="stat-tags">0</span>
+            <span class="stat-lbl">研究主题</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-val" id="stat-years">-</span>
+            <span class="stat-lbl">时间跨度</span>
+        </div>
+    </div>
+
+    <!-- Bento Grid -->
+    <div class="grid-section">
+        <a href="index.html" class="bento-card card-large">
+            <div class="card-icon material-icons">hub</div>
+            <h3>论文关联图谱</h3>
+            <p>基于引用关系与语义相似度，构建全景式学术网络。直观洞察论文间的潜在联系。</p>
+        </a>
+        
+        <a href="tag-graph.html" class="bento-card">
+            <div class="card-icon material-icons">local_offer</div>
+            <h3>主题共现网络</h3>
+            <p>分析研究热点与领域交叉，发现高频共现的量化标签。</p>
+        </a>
+
+        <a href="3d-graph.html" class="bento-card">
+            <div class="card-icon material-icons">public</div>
+            <h3>3D 沉浸视图</h3>
+            <p>在三维空间中漫游知识宇宙，体验震撼的数据可视化效果。</p>
+        </a>
+
+        <div class="bento-card card-large" style="background: linear-gradient(135deg, rgba(255,152,0,0.05) 0%, var(--card-bg) 100%); pointer-events:none;">
+            <div class="card-icon material-icons" style="color: var(--secondary-color);">school</div>
+            <h3>最新收录</h3>
+            <div id="latest-paper-preview" style="margin-top:10px; font-size:14px; font-weight:500;">加载中...</div>
+        </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="tags-section">
+        <h3 class="section-title">热门研究领域</h3>
+        <div id="tag-container"></div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="contact-box">
+                <div class="contact-item">
+                    <span class="material-icons" style="font-size: 18px;">chat_bubble_outline</span>
+                    <span>WeChat: QuantML</span>
+                </div>
+                <div class="divider"></div>
+                <a href="wechat-qr.jpg" target="_blank" class="qr-link">
+                    <span class="material-icons" style="font-size: 18px;">qr_code_2</span>
+                    <span>扫码添加</span>
+                </a>
+            </div>
+            <p>Copyright © 2025 QuantML Research. Powered by D3.js & WebGL.</p>
+        </div>
+    </footer>
+
     <script>
-        // 主题初始化，与图谱页一致
-        (function initTheme(){
-            const t = localStorage.getItem('qkg_theme') || 'light';
-            if (t === 'dark') document.body.classList.add('dark');
-        })();
-        document.getElementById('home-toggle-dark').addEventListener('click', function(){
+        // --- Theme Logic ---
+        function initTheme() {
+            const savedTheme = localStorage.getItem('qkg_theme') || 'light';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark');
+            }
+        }
+        initTheme();
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
             document.body.classList.toggle('dark');
-            localStorage.setItem('qkg_theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('qkg_theme', isDark ? 'dark' : 'light');
         });
 
-        // 加载数据，填充统计、标签云、最新论文、搜索建议
+        // --- Data Loading ---
         let allPapers = [];
         let allTags = [];
-        fetch('papers.json')
-            .then(r => r.json())
-            .then(papers => {
-                allPapers = papers;
-                const tagCount = new Map();
-                const years = [];
-                papers.forEach(p => {
-                    const y = (typeof p.year === 'number') ? p.year : null;
-                    if (y !== null) years.push(y);
-                    if (Array.isArray(p.tags)) {
-                        p.tags.forEach(t => tagCount.set(t, (tagCount.get(t) || 0) + 1));
-                    }
-                });
-                allTags = Array.from(tagCount.keys());
 
-                // 统计
+        async function loadData() {
+            try {
+                const res = await fetch('papers.json');
+                const papers = await res.json();
+                allPapers = papers;
+
+                // Stats
                 document.getElementById('stat-papers').textContent = papers.length;
-                document.getElementById('stat-tags').textContent = allTags.length;
-                if (years.length) {
-                    const minY = Math.min(...years), maxY = Math.max(...years);
-                    document.getElementById('stat-years').textContent = `${minY} - ${maxY}`;
-                } else {
-                    document.getElementById('stat-years').textContent = '-';
+                
+                const years = papers.map(p => p.year).filter(y => y);
+                if(years.length) {
+                    const min = Math.min(...years);
+                    const max = Math.max(...years);
+                    document.getElementById('stat-years').textContent = `${min} - ${max}`;
                 }
 
-                // 标签云（Top 20）
-                const topTags = Array.from(tagCount.entries()).sort((a,b) => b[1]-a[1]).slice(0, 20);
-                const maxC = topTags.length ? topTags[0][1] : 1;
-                const cloud = document.getElementById('tag-cloud');
-                topTags.forEach(([tag, cnt]) => {
-                    const a = document.createElement('span');
-                    a.className = 'tag-chip';
-                    const scale = 0.9 + 0.8 * (cnt / maxC);
-                    a.style.fontSize = `${12 * scale}px`;
-                    a.textContent = `${tag} (${cnt})`;
-                    a.title = '在可视化中查看该标签';
-                    a.addEventListener('click', () => {
-                        // 默认进入标签关系图谱
-                        location.href = `tag-graph.html#${encodeURIComponent(tag)}`;
-                    });
-                    cloud.appendChild(a);
-                });
-
-                // 最新论文（按年份降序；无年份排最后）
-                const latest = papers.slice().sort((a,b) => {
-                    const ya = (typeof a.year === 'number') ? a.year : -Infinity;
-                    const yb = (typeof b.year === 'number') ? b.year : -Infinity;
-                    return yb - ya;
-                }).slice(0, 6);
-                const lp = document.getElementById('latest-papers');
-                latest.forEach(p => {
-                    const li = document.createElement('li');
-                    li.className = 'paper-item';
-                    const title = document.createElement('div');
-                    title.className = 'paper-title';
-                    title.textContent = p.title;
-                    const meta = document.createElement('div');
-                    meta.className = 'paper-meta';
-                    const authors = Array.isArray(p.authors) ? p.authors.join(', ') : 'Unknown';
-                    meta.textContent = `${(p.year || 'Unknown')} · ${authors}`;
-                    li.appendChild(title);
-                    li.appendChild(meta);
-                    li.addEventListener('click', () => {
-                        // 进入论文-标签图谱并聚焦到该论文
-                        location.href = `index.html#${encodeURIComponent(p.id)}`;
-                    });
-                    lp.appendChild(li);
-                });
-
-                // 搜索建议：论文标题 + 标签
-                const dl = document.getElementById('home-suggestions');
+                // Tags Analysis
+                const tagMap = new Map();
                 papers.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.title;
-                    dl.appendChild(opt);
+                    if(p.tags && Array.isArray(p.tags)) {
+                        p.tags.forEach(t => tagMap.set(t, (tagMap.get(t) || 0) + 1));
+                    }
                 });
-                allTags.forEach(t => {
-                    const opt = document.createElement('option');
-                    opt.value = t;
-                    dl.appendChild(opt);
-                });
-            });
+                
+                allTags = Array.from(tagMap.keys());
+                document.getElementById('stat-tags').textContent = allTags.length;
 
-        function goSearch() {
-            const q = document.getElementById('home-search').value.trim().toLowerCase();
-            if (!q) return;
-            // 尝试匹配论文
-            const p = allPapers.find(x => (x.title || '').toLowerCase().includes(q));
-            if (p) {
-                location.href = `index.html#${encodeURIComponent(p.id)}`;
-                return;
+                // Populate Tags Cloud (Top 15)
+                const topTags = Array.from(tagMap.entries())
+                    .sort((a,b) => b[1] - a[1])
+                    .slice(0, 15);
+                
+                const tagContainer = document.getElementById('tag-container');
+                topTags.forEach(([tag, count]) => {
+                    const a = document.createElement('a');
+                    a.className = 'tag-pill';
+                    a.textContent = tag;
+                    a.href = `tag-graph.html#${encodeURIComponent(tag)}`;
+                    tagContainer.appendChild(a);
+                });
+
+                // Latest Paper
+                const latest = papers.sort((a,b) => (b.year || 0) - (a.year || 0))[0];
+                if(latest) {
+                    document.getElementById('latest-paper-preview').textContent = `"${latest.title}" (${latest.year})`;
+                }
+
+                // Search Suggestions
+                const dl = document.getElementById('search-list');
+                // Limit suggestions for performance
+                const suggestions = [...allTags, ...papers.slice(0, 50).map(p => p.title)];
+                suggestions.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    dl.appendChild(opt);
+                });
+
+            } catch(e) {
+                console.error("Data load error", e);
             }
-            // 尝试匹配标签
-            const t = allTags.find(x => (x || '').toLowerCase() === q || (x || '').toLowerCase().includes(q));
-            if (t) {
-                // 默认跳转论文-标签图谱，并定位标签；可改为 tag-graph.html
-                location.href = `index.html#${encodeURIComponent('tag-' + t)}`;
-                return;
-            }
-            // 未命中则跳到图谱主界面
-            location.href = 'index.html';
         }
-        document.getElementById('home-search-go').addEventListener('click', goSearch);
-        document.getElementById('home-search').addEventListener('keydown', function(e){ if (e.key === 'Enter') goSearch(); });
+
+        loadData();
+
+        // --- Search Logic ---
+        const searchInput = document.getElementById('home-search');
+        
+        function handleSearch() {
+            const val = searchInput.value.trim().toLowerCase();
+            if(!val) return;
+
+            // Check if tag
+            const isTag = allTags.some(t => t.toLowerCase() === val);
+            if(isTag) {
+                window.location.href = `tag-graph.html#${encodeURIComponent(searchInput.value)}`; // preserve case if possible, but searchInput.value might differ case
+                // Best to find original tag case
+                const realTag = allTags.find(t => t.toLowerCase() === val);
+                if(realTag) window.location.href = `tag-graph.html#${encodeURIComponent(realTag)}`;
+                return;
+            }
+
+            // Check if paper
+            const paper = allPapers.find(p => p.title.toLowerCase().includes(val));
+            if(paper) {
+                window.location.href = `index.html#${encodeURIComponent(paper.id)}`;
+                return;
+            }
+
+            // Default fallback
+            window.location.href = `index.html`; 
+        }
+
+        searchInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') handleSearch();
+        });
+        
+        searchInput.addEventListener('input', (e) => {
+            // Optional: Auto-redirect on exact selection from datalist? 
+            // Might be annoying if user is still typing. Let's stick to Enter.
+        });
+
     </script>
 </body>
-</html> 
+</html>

@@ -431,14 +431,17 @@
                             <label style="display:flex; align-items:center; cursor:pointer;">
                                 <input type="checkbox" id="toggle-tags" checked style="margin-right:8px;"> 显示标签节点
                             </label>
-            </div>
-                        <div style="display:flex; align-items:center; gap:10px;">
+                        </div>
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 10px;">
                             <span style="font-size:12px;">年份:</span>
                             <input type="number" id="year-min" class="filter-input" style="width:60px; padding:4px; border-radius:4px; border:1px solid #ddd;">
                             <span>-</span>
                             <input type="number" id="year-max" class="filter-input" style="width:60px; padding:4px; border-radius:4px; border:1px solid #ddd;">
-            </div>
-            </div>
+                        </div>
+                        <button id="btn-open-analysis" style="width:100%; padding:8px; background:var(--secondary-color); color:white; border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:bold; margin-top:10px;">
+                            <span class="material-icons" style="font-size:16px; margin-right:5px;">analytics</span> 深度分析工具
+                        </button>
+                    </div>
 
                     <div class="sidebar-section">
                         <h3>🔍 多标签检索</h3>
@@ -461,6 +464,40 @@
             </div>
         </div>
         
+                <!-- Analysis Panel -->
+                <div id="analysis-panel" class="info-content">
+                    <button id="back-to-stats-2" style="margin-bottom:15px; background:transparent; border:none; color:var(--primary-color); cursor:pointer; display:flex; align-items:center; font-weight:600;">
+                        <span class="material-icons" style="font-size:16px; margin-right:5px;">arrow_back</span> 返回概览
+                    </button>
+                    
+                    <div class="sidebar-section">
+                        <h3>🔍 最短路径分析</h3>
+                        <div style="font-size:12px; color:#666; margin-bottom:10px;">选择两个节点以寻找关联路径</div>
+                        
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:12px; font-weight:bold;">起点:</label>
+                            <div id="path-start-display" style="padding:8px; background:rgba(0,0,0,0.05); border-radius:4px; margin-top:4px; font-size:13px; color:#555;">未选择 (点击节点设置)</div>
+                        </div>
+                        
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:12px; font-weight:bold;">终点:</label>
+                            <div id="path-end-display" style="padding:8px; background:rgba(0,0,0,0.05); border-radius:4px; margin-top:4px; font-size:13px; color:#555;">未选择 (点击节点设置)</div>
+                        </div>
+                        
+                        <div style="display:flex; gap:10px;">
+                            <button id="btn-find-path" class="tag-chip" style="flex:1; text-align:center; background:var(--primary-color); color:white;">开始分析</button>
+                            <button id="btn-clear-path" class="tag-chip" style="background:#ddd; color:#333;">清除</button>
+                        </div>
+                        
+                        <div id="path-result" style="margin-top:15px; font-size:13px; line-height:1.6;"></div>
+                    </div>
+                    
+                    <div class="sidebar-section">
+                        <h3>💾 数据管理</h3>
+                        <button id="btn-export-csv" class="tag-chip" style="width:100%; text-align:center; margin-bottom:10px;">导出当前数据 (CSV)</button>
+                    </div>
+                </div>
+
                 <!-- Details View: Selected Node Info -->
                 <div id="details-panel" class="info-content">
                     <button id="back-to-stats" style="margin-bottom:15px; background:transparent; border:none; color:var(--primary-color); cursor:pointer; display:flex; align-items:center; font-weight:600;">
@@ -476,6 +513,10 @@
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
                             <button id="btn-focus-node" class="tag-chip" style="background:#4CAF50; color:white;">👁️ 聚焦模式</button>
                             <button id="btn-pin-node" class="tag-chip" style="background:#FF9800; color:white;">📍 锁定位置</button>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <button onclick="setPathStart(state.currentNode)" class="tag-chip" style="background:#2196F3; color:white;">🏁 设为路径起点</button>
+                            <button onclick="setPathEnd(state.currentNode)" class="tag-chip" style="background:#9C27B0; color:white;">🚩 设为路径终点</button>
                         </div>
                     </div>
                 </div>
@@ -524,6 +565,7 @@
     </div>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/d3-polygon@3"></script>
     <script>
         // --- State Management ---
         const state = {
@@ -535,6 +577,7 @@
             currentNode: null,
             focusMode: false,
             colorByCluster: false,
+            showHulls: false,
             clusterColors: d3.scaleOrdinal(d3.schemeCategory10),
             filters: {
                 showPapers: true,
@@ -542,11 +585,13 @@
                 minYear: null,
                 maxYear: null
             },
-            multiTags: new Set()
+            multiTags: new Set(),
+            pathStart: null,
+            pathEnd: null
         };
 
         // --- D3 Variables ---
-        let svg, g, simulation, link, node, zoom;
+        let svg, g, simulation, link, node, hullPath, zoom;
 
         // --- DOM Elements ---
         const els = {
@@ -554,11 +599,39 @@
             toggleBtn: document.getElementById('toggle-sidebar'),
             defaultPanel: document.getElementById('default-panel'),
             detailsPanel: document.getElementById('details-panel'),
+            analysisPanel: document.getElementById('analysis-panel'),
             nodeDetails: document.getElementById('node-details'),
             searchInput: document.getElementById('search-input'),
             tooltip: document.getElementById('node-tooltip'),
-            loading: document.getElementById('loading-screen')
+            loading: document.getElementById('loading-screen'),
+            toast: document.getElementById('toast-container')
         };
+        
+        // --- Toast System ---
+        function showToast(msg, type='info') {
+            if(!els.toast) {
+                const div = document.createElement('div');
+                div.id = 'toast-container';
+                div.style.cssText = 'position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none;';
+                document.body.appendChild(div);
+                els.toast = div;
+            }
+            const el = document.createElement('div');
+            el.style.cssText = `
+                background: ${type === 'error' ? '#f44336' : '#333'};
+                color: white; padding: 10px 20px; border-radius: 8px; 
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+                font-size: 14px; opacity: 0; transform: translateY(20px); transition: all 0.3s;
+            `;
+            el.textContent = msg;
+            els.toast.appendChild(el);
+            requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
 
         // --- Initialization ---
         async function init() {
@@ -735,9 +808,11 @@
                     .attr("y1", d => d.source.y)
                     .attr("x2", d => d.target.x)
                     .attr("y2", d => d.target.y);
-                
+
                 node
                     .attr("transform", d => `translate(${d.x},${d.y})`);
+                    
+                if(state.showHulls) updateHulls();
             });
             
             // Initial positioning helper
@@ -947,16 +1022,49 @@
             });
             document.getElementById('export-png').addEventListener('click', exportPNG);
             
+            // New UI Handlers
+            document.getElementById('btn-open-analysis').addEventListener('click', () => {
+                els.defaultPanel.classList.remove('active');
+                els.analysisPanel.classList.add('active');
+            });
+            document.getElementById('back-to-stats-2').addEventListener('click', () => {
+                els.analysisPanel.classList.remove('active');
+                els.defaultPanel.classList.add('active');
+            });
+            
+            document.getElementById('btn-pin-node').addEventListener('click', () => {
+                if(state.currentNode) {
+                    if(state.currentNode.fx) {
+                        state.currentNode.fx = null;
+                        state.currentNode.fy = null;
+                        showToast("已解锁位置");
+                    } else {
+                        state.currentNode.fx = state.currentNode.x;
+                        state.currentNode.fy = state.currentNode.y;
+                        showToast("已锁定位置");
+                    }
+                }
+            });
+            
+            // Pathfinding UI
+            document.getElementById('btn-find-path').addEventListener('click', runPathfinding);
+            document.getElementById('btn-clear-path').addEventListener('click', clearPath);
+            document.getElementById('btn-export-csv').addEventListener('click', exportCSV);
+
             // Community/Cluster Color
             document.getElementById('cluster-color').addEventListener('click', () => {
                 state.colorByCluster = !state.colorByCluster;
+                state.showHulls = state.colorByCluster; // Toggle hulls with color
+                
                 if(state.colorByCluster) {
-                    // Simple logic: color by "primary tag" (first tag in list for paper, self for tag)
-                    // Or improved: Run simple label propagation
                     detectCommunities();
                     node.select("circle").attr("fill", d => state.clusterColors(d.community));
+                    updateHulls();
+                    showToast("已启用社区着色与轮廓");
                 } else {
                     node.select("circle").attr("fill", d => d.type === 'paper' ? '#ff7f0e' : '#1f77b4');
+                    g.selectAll(".hull").remove();
+                    showToast("已恢复默认着色");
                 }
             });
 
@@ -1103,6 +1211,137 @@
                      n.community = maxC;
                 }
             });
+        }
+
+        // --- Pathfinding & Hulls ---
+        
+        function setPathStart(node) {
+            state.pathStart = node;
+            document.getElementById('path-start-display').textContent = node.name;
+            showToast(`已设置起点: ${node.name}`);
+        }
+        function setPathEnd(node) {
+            state.pathEnd = node;
+            document.getElementById('path-end-display').textContent = node.name;
+            showToast(`已设置终点: ${node.name}`);
+        }
+        
+        function runPathfinding() {
+            if(!state.pathStart || !state.pathEnd) {
+                showToast("请先选择起点和终点", "error");
+                return;
+            }
+            
+            // BFS
+            const queue = [[state.pathStart]];
+            const visited = new Set([state.pathStart.id]);
+            let foundPath = null;
+            
+            while(queue.length > 0) {
+                const path = queue.shift();
+                const current = path[path.length - 1];
+                
+                if(current.id === state.pathEnd.id) {
+                    foundPath = path;
+                    break;
+                }
+                
+                // Find neighbors
+                const neighbors = [];
+                state.links.forEach(l => {
+                    if(l.source.id === current.id) neighbors.push(l.target);
+                    if(l.target.id === current.id) neighbors.push(l.source);
+                });
+                
+                for(let neighbor of neighbors) {
+                    if(!visited.has(neighbor.id)) {
+                        visited.add(neighbor.id);
+                        queue.push([...path, neighbor]);
+                    }
+                }
+            }
+            
+            if(foundPath) {
+                const pathIds = new Set(foundPath.map(n => n.id));
+                // Highlight
+                node.classed("dimmed", n => !pathIds.has(n.id));
+                link.classed("dimmed", l => !(pathIds.has(l.source.id) && pathIds.has(l.target.id)));
+                
+                // Draw line path explicitly
+                const resultDiv = document.getElementById('path-result');
+                resultDiv.innerHTML = `<strong>发现路径 (长度 ${foundPath.length}):</strong><br>` + 
+                    foundPath.map(n => `<span class="tag-chip" onclick="findNodeByName('${n.name}')" style="margin:2px; display:inline-block;">${n.name}</span>`).join(' → ');
+                
+                showToast("路径分析完成");
+            } else {
+                showToast("未找到关联路径", "error");
+                document.getElementById('path-result').textContent = "无关联路径";
+            }
+        }
+        
+        function clearPath() {
+            state.pathStart = null;
+            state.pathEnd = null;
+            document.getElementById('path-start-display').textContent = "未选择";
+            document.getElementById('path-end-display').textContent = "未选择";
+            document.getElementById('path-result').textContent = "";
+            resetView();
+        }
+
+        function updateHulls() {
+            if(!state.colorByCluster) return;
+            
+            const groups = d3.group(state.nodes, d => d.community);
+            const hulls = [];
+            
+            for(let [key, members] of groups) {
+                // We need points.
+                // Hull requires at least 3 points.
+                if(members.length < 3) continue;
+                const points = members.map(d => [d.x, d.y]);
+                const hull = d3.polygonHull(points);
+                if(hull) hulls.push({ id: key, path: hull });
+            }
+            
+            g.selectAll(".hull")
+                .data(hulls)
+                .join("path")
+                .attr("class", "hull")
+                .attr("d", d => "M" + d.path.join("L") + "Z")
+                .attr("fill", d => state.clusterColors(d.id))
+                .attr("fill-opacity", 0.1)
+                .attr("stroke", d => state.clusterColors(d.id))
+                .attr("stroke-width", 20)
+                .attr("stroke-linejoin", "round")
+                .attr("stroke-opacity", 0.1)
+                .style("pointer-events", "none") // Let clicks pass through
+                .lower(); // Send to back
+        }
+        
+        function exportCSV() {
+            const rows = [["Title", "Year", "Authors", "Tags", "Abstract"]];
+            // Filtered nodes
+            const visibleNodes = state.nodes.filter(n => n.type === 'paper' && (!state.filters.minYear || n.data.year >= state.filters.minYear));
+            
+            visibleNodes.forEach(n => {
+                rows.push([
+                    `"${(n.data.title || '').replace(/"/g, '""')}"`,
+                    n.data.year || '',
+                    `"${(n.data.authors || []).join(', ')}"`,
+                    `"${(n.data.tags || []).join('; ')}"`,
+                    `"${(n.data.abstract || '').replace(/"/g, '""')}"`
+                ]);
+            });
+            
+            const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "papers_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast("CSV 导出成功");
         }
 
         function fitView() {
